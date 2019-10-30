@@ -1,5 +1,6 @@
 from absl import flags
 from typing import Dict
+from termcolor import colored, cprint
 
 FLAGS = flags.FLAGS
 
@@ -46,8 +47,11 @@ def assign_flags() -> flags:
 
 def load_settings():
   settings: Settings = Settings()
+  first = True
   for k in settings.keys():
     setting: SimpleFlag = settings[k]
     if setting.value is None:
-      setting.value = input('{0}: {1}'.format(k, setting.help))
+      if first:
+        cprint('Interactive Setup', attrs=['bold'])
+      setting.value = input('{0} [{1}]: '.format(k, setting.help))
   return settings

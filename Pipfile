@@ -10,6 +10,7 @@ absl-py = "*"
 google-cloud-bigquery = "*"
 typing = "*"
 pipenv = "*"
+termcolor = "*"
 
 [requires]
 python_version = "3"
