@@ -18,10 +18,10 @@ class SimpleFlag:
 
     def set_value(self, value: str):
         self.value = value
-        self.__value_set = True
+        self.__value_set = value is not None
 
     def value_explicitly_set(self) -> bool:
-        return self.__value_set is not None
+        return self.__value_set
 
     def __str__(self):
         return self.value
