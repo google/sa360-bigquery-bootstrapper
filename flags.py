@@ -32,3 +32,7 @@ def assign_flags() -> flags:
     args[k].method(k, args[k].default, args[k].help)
   return flags.FLAGS
 
+def check_settings(settings: flags):
+  for k in args:
+    if flags[k] is None:
+      print(k, "is none")
