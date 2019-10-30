@@ -7,7 +7,9 @@ verify_ssl = true
 
 [packages]
 absl-py = "*"
-site = "*"
+google-cloud-bigquery = "*"
+typing = "*"
+pipenv = "*"
 
 [requires]
 python_version = "3"
