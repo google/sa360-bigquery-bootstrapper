@@ -34,5 +34,5 @@ def assign_flags() -> flags:
 
 def check_settings(settings: flags):
   for k in args:
-    if flags[k] is None:
+    if flags.FLAGS[k] is None:
       print(k, "is none")

@@ -1,6 +1,7 @@
+from absl import flags
 from absl import app
 from google.cloud import bigquery
-import flags
+import app_flags
 
 
 class Bootstrap:
@@ -10,7 +11,7 @@ class Bootstrap:
 
   def run(self, args):
     print(self.settings.advertiser_id)
-    flags.check_settings()
+    app_flags.check_settings(self.settings)
     client = bigquery.Client()
     result = client.create_dataset(self.settings.raw_dataset)
     print(result)

@@ -6,7 +6,7 @@ except ImportError:
   import bootstrapper
 
 from absl import flags
-import flags as fl
+import app_flags as fl
 assigned_flags = fl.assign_flags()
 flags.adopt_module_key_flags(fl)
 
