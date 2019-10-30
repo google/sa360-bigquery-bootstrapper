@@ -17,14 +17,22 @@ Run the following command:
 
     gcloud config set project {{project-id}}
 
+## One-time setup
+If you run this command more than once, nothing bad will happen, 
+but you should only have to run it one time.
+    
+    pip3 install pipenv --user
+    [[ $(grep -c "$HOME/.local/bin" <(echo $PATH)) == 0 ]] \
+    && echo "PATH=$PATH:$HOME/.local/bin" >> $HOME/.bashrc \
+    && source ~/.bashrc
+    
+    
 ## Run deploy script
 
-Now you can run the deploy script. It will be interactive, so be sure to follow the prompts below.
+Now we will run the deploy script. It will be interactive, so be sure to follow the prompts below.
 
 ```bash
-pip3 install pipenv --user
-~/.local/bin/pipenv install
-~/.local/bin/pipenv run python deploy.py
+pipenv run python run.py
 ```
 
 You can copy the above command into the interactive shell below (or click on the **>** icon and then press enter below)
