@@ -65,9 +65,13 @@ def load_settings():
                 first = False
             default = ' [{0}]'.format(
                 setting.default
-            ) if hasattr(setting.default) else ''
+            ) if setting.default is not None else ''
 
             setting.value = input('{0} ({1}){2}: '.format(k,
                                                           setting.help,
                                                           default))
+
+            if setting.value is None and setting.default is not None:
+                setting.value = setting.default
+
     return settings
