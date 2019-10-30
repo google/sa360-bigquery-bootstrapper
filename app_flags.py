@@ -21,7 +21,7 @@ class SimpleFlag:
         self.__value_set = True
 
     def value_explicitly_set(self) -> bool:
-        return self.__value_set is True
+        return self.__value_set is not None
 
     def __str__(self):
         return self.value
@@ -45,12 +45,12 @@ class Settings(SimpleFlags):
     def __init__(self):
         super().__init__(args)
         for k in args.keys():
-            self[k].set_value(FLAGS.__getattr__(k))
+            self[k].set_value(getattr(FLAGS, k))
 
 
 def assign_flags() -> flags:
     for k in args:
-        args[k].method(k, args[k].default, args[k].help)
+        args[k].method(k, None, args[k].help)
     return flags.FLAGS
 
 
