@@ -45,7 +45,7 @@ class Settings(SimpleFlags):
     def __init__(self):
         super().__init__(args)
         for k in args.keys():
-            self[k].set_value(getattr(FLAGS, k))
+            self[k].set_value(FLAGS.__getattr__(k))
 
 
 def assign_flags() -> flags:
