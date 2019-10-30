@@ -5,13 +5,13 @@ import app_flags
 
 
 class Bootstrap:
-  def __init__(self, settings: flags):
-    self.settings = settings
+  settings: app_flags.Settings = None
+
+  def __init__(self):
     app.run(self.run)
 
   def run(self, args):
-    print(self.settings.advertiser_id)
-    app_flags.check_settings(self.settings)
+    settings: app_flags.Settings = app_flags.load_settings()
     client = bigquery.Client()
-    result = client.create_dataset(self.settings.raw_dataset)
+    result = client.create_dataset(settings.raw_dataset)
     print(result)

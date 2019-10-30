@@ -11,4 +11,4 @@ assigned_flags = fl.assign_flags()
 flags.adopt_module_key_flags(fl)
 
 if __name__ == '__main__':
-  bootstrapper.Bootstrap(assigned_flags)
+  bootstrapper.Bootstrap()
