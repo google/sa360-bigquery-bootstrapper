@@ -34,5 +34,5 @@ def assign_flags() -> flags:
 
 def check_settings(settings: flags):
   for k in args:
-    if getattr(flags, k) is None:
+    if getattr(flags.FLAGS, k) is None:
       print(k, "is none")
