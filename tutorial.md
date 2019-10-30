@@ -23,7 +23,7 @@ but you should only have to run it one time.
     
     pip3 install pipenv --user
     [[ $(grep -c "$HOME/.local/bin" <(echo $PATH)) == 0 ]] \
-    && echo "PATH=$PATH:$HOME/.local/bin" >> $HOME/.bashrc \
+    && echo "PATH=\$PATH:$HOME/.local/bin" >> $HOME/.bashrc \
     && source ~/.bashrc
     
     
