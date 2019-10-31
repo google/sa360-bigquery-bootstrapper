@@ -236,8 +236,7 @@ class Hooks:
                 setting.value = input('Select project name: ')
             else:
                 cprint('Select a valid input option', 'red')
-                print(setting.value)
-                continue
+                return False
             break
         if not setting:
             return
