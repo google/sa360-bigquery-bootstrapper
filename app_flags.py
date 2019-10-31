@@ -54,7 +54,6 @@ class SettingOptions(object):
             self.default
         ) if self.default is not None else ''
         prompt = ''
-        print('p', self.prompt is not None)
         if self.prompt is not None:
             prompt += '\n'
             if self.prompt is str:
