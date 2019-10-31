@@ -222,17 +222,22 @@ class Validator:
 class Hooks:
     @staticmethod
     def create_bucket(setting: SettingOptions):
-        if 'buckets' not in setting.custom_data:
-            raise BootstrapperInternalError('No buckets set.')
-        if setting.value is int:
-            val = int(setting.value)
-            if val <= len(setting.custom_data['buckets']):
-                setting.value = setting.custom_data['buckets'][val - 1]
+        while True:
+            if 'buckets' not in setting.custom_data:
+                raise BootstrapperInternalError('No buckets set.')
+            if setting.value.isnumeric():
+                val = int(setting.value)
+                if val <= len(setting.custom_data['buckets']):
+                    setting.value = setting.custom_data['buckets'][val - 1]
+                else:
+                    cprint('Invalid selection', 'red', attrs=['bold'])
+                    return False
+            elif setting.value == 'c':
+                setting.value = input('Select project name: ')
             else:
-                cprint('Invalid selection', 'red', attrs=['bold'])
-                return False
-        elif setting.value == 's':
-            setting.value = input('Select project name: ')
+                cprint('Select a valid input option', 'red')
+                continue
+            break
         if not setting:
             return
         client = storage.Client(project=args['gcp_project_name'].value)
@@ -245,7 +250,7 @@ class Hooks:
             return client.get_bucket(setting.value)
         except exceptions.NotFound as e:
             r = input(
-                "Cannot find bucket {0}. Create [y/n]? ".format(setting)
+                'Cannot find bucket {0}. Create [y/n]? '.format(setting)
             )
             if r.lower() == 'y':
                 ChooseAnother.toggle = True
@@ -255,13 +260,13 @@ class Hooks:
                 )
         except exceptions.Forbidden as e:
             ChooseAnother.toggle = True
-            cprint("Please select a GCP bucket you own and have access to or "
-                   "double check your permissions. If you are having trouble "
-                   "finding an unclaimed unique name, consider adding your "
-                   "project name as a prefix.", "red")
+            cprint('Please select a GCP bucket you own and have access to or '
+                   'double check your permissions. If you are having trouble '
+                   'finding an unclaimed unique name, consider adding your '
+                   'project name as a prefix.', 'red')
         if ChooseAnother.toggle:
             setting.value = input(
-                "Press Ctrl+C to cancel or choose a different input: "
+                'Press Ctrl+C to cancel or choose a different input: '
             )
             Hooks.create_bucket(setting)
 
