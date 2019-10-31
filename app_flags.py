@@ -3,6 +3,7 @@ from typing import Dict
 from typing import List
 from termcolor import cprint
 from google.cloud import storage
+from google.api_core import exceptions
 from typing import overload
 
 FLAGS = flags.FLAGS
@@ -98,10 +99,19 @@ class Hooks:
         if not setting.value:
             return
         client = storage.Client()
-        bucket = client.get_bucket(setting.value)
-        print(bucket)
-        client.create_bucket(setting.value,
-                             project=args['gcp_project_name'].value)
+        try:
+            bucket = client.get_bucket(setting.value)
+        except exceptions.NotFound as e:
+            r = input(
+                "Cannot find bucket {0}. Create [y/n]? ".format(setting.value)
+            )
+            if r.lower() == 'y':
+                client.create_bucket(
+                    setting.value,
+                    project=args['gcp_project_name'].value
+                )
+            else:
+                raise e
 
 
 SimpleFlags = Dict[str, SimpleFlag]
