@@ -224,6 +224,8 @@ class Validator:
 class Hooks:
     @staticmethod
     def create_bucket(setting: SettingOptions):
+        class ChooseAnother:
+            toggle = False
         while True:
             if 'buckets' not in setting.custom_data:
                 raise BootstrapperInternalError('No buckets set.')
@@ -237,15 +239,12 @@ class Hooks:
             elif setting.value == 'c':
                 setting.value = input('Select project name: ')
                 print(setting.value, 'val')
-            else:
+            elif not ChooseAnother.toggle:
                 cprint('Select a valid input option', 'red')
                 return False
             if not setting:
                 return True
             client = storage.Client(project=args['gcp_project_name'].value)
-
-            class ChooseAnother:
-                toggle = False
 
             ChooseAnother.toggle = False
             try:
