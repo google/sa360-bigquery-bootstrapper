@@ -134,7 +134,7 @@ class SettingOptions(object):
         self.__value.set_val(value)
         # perform actions
         if self.after is not None:
-            self.__error = not self.after(self)
+            self.__error = self.after(self)
             print(self.__error)
         self.__error = False
 
