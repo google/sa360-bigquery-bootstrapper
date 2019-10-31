@@ -8,7 +8,8 @@ FLAGS = flags.FLAGS
 
 StringList = List[str]
 
-class SimpleFlag(str):
+
+class SimpleFlag(object, str):
     default = None
     help = None
     method: callable = None
@@ -28,7 +29,7 @@ class SimpleFlag(str):
         self.validation = validation
         self.show = show
         self.after = after
-        super().__init__()
+        super(str).__init__()
 
     @staticmethod
     def dash(v: str) -> str:
