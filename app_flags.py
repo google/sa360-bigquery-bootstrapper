@@ -135,7 +135,8 @@ class SettingOptions(object):
         # perform actions
         if self.after is not None:
             self.__error = not self.after(self)
-        self.__error = False
+        else:
+            self.__error = False
 
     def set_value(self, value: str = '', prompt: str = '', init: str = ''):
         while True:
