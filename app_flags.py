@@ -134,7 +134,7 @@ class SettingOptions(object):
         self.__value.set_val(value)
         # perform actions
         if self.after is not None:
-            self.__error = self.after(self)
+            self.__error = not self.after(self)
         self.__error = False
 
     def set_value(self, value: str = '', prompt: str = '', init: str = ''):
@@ -155,7 +155,6 @@ class SettingOptions(object):
                 else:
                     self.value = val
                 if self.__error is not False:
-                    cprint('error: ' + str(self.__error), 'red')
                     self.value = None
                     continue
             else:
