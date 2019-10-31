@@ -1,4 +1,5 @@
 from absl import flags
+from google.cloud.storage import Bucket
 from typing import Dict
 from typing import List
 from termcolor import cprint
@@ -10,7 +11,7 @@ FLAGS = flags.FLAGS
 
 StringList = List[str]
 StringKeyDict = Dict[str, any]
-
+Buckets = List[Bucket]
 
 class SettingOptions(object):
     default = None
@@ -167,8 +168,9 @@ class Hooks:
     @staticmethod
     def bucket_options(setting: SettingOptions):
         client = storage.Client(project=args['gcp_project_name'].value)
+        buckets: Buckets = []
         buckets = setting.custom_data['buckets'] = client.list_buckets()
-        return '\n'.join(map(lambda x: '- ' + x, buckets))
+        return '\n'.join(map(lambda x: '- ' + str(x), buckets))
 
 
 SimpleFlags = Dict[str, SettingOptions]
