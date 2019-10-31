@@ -171,7 +171,7 @@ class Hooks:
         buckets = setting.custom_data['buckets'] = list(client.list_buckets())
         i = 0
         result = '\n'.join(['{}: {}'.format(i, buckets[i])
-                            for b in range(len(buckets))])
+                            for b in range(1, len(buckets)+1)])
         print(result)
         return result
 
