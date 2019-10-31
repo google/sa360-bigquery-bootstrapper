@@ -61,7 +61,7 @@ class SettingOptions(str):
                 prompt += self.prompt(self)
             prompt += '\nInput: '
         return input(
-            '{0} ({1}){2}: '.format(self.help, k, self.default, prompt)
+            '{0} ({1}){2}: '.format(self.help, k, default, prompt)
         )
     def set_value(self, value: str):
         if self.method == flags.DEFINE_boolean:
