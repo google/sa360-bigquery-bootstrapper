@@ -157,7 +157,6 @@ class SettingOptions(object):
                     self.value = val
                 print(self.__error)
                 if self.__error:
-                    print('ERROR!')
                     self.value = None
                     continue
             else:
