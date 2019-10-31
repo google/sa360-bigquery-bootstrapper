@@ -67,6 +67,12 @@ class SimpleFlag(str):
     def __bool__(self):
         return bool(self.value)
 
+    def __index__(self):
+        return self.value
+
+    def __getitem__(self, item):
+        return self.value.__getitem__(item)
+
 
 class Validator:
     @staticmethod
