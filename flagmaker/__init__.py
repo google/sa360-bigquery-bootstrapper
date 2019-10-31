@@ -54,6 +54,8 @@ class AbstractSettings(SettingOptions, ABC):
             self.args[k].method(k, None, self.args[k].help)
         return FLAGS
 
+    def __getattr__(self, item):
+        return self.args.get(item)
 
 AbstractSettingsClass = ClassVar[AbstractSettings]
 
