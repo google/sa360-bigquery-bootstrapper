@@ -135,6 +135,7 @@ class SettingOptions(object):
         # perform actions
         if self.after is not None:
             self.__error = not self.after(self)
+            print(self.__error)
         self.__error = False
 
     def set_value(self, value: str = '', prompt: str = '', init: str = ''):
@@ -239,7 +240,7 @@ class Hooks:
                 return False
             break
         if not setting:
-            return
+            return True
         client = storage.Client(project=args['gcp_project_name'].value)
 
         class ChooseAnother:
