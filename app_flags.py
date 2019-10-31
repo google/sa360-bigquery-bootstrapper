@@ -236,6 +236,7 @@ class Hooks:
                     return False
             elif setting.value == 'c':
                 setting.value = input('Select project name: ')
+                print(setting.value, 'val')
             else:
                 cprint('Select a valid input option', 'red')
                 return False
