@@ -63,6 +63,7 @@ class SettingOptions(str):
         return input(
             '{0} ({1}){2}: '.format(self.help, k, default, prompt)
         )
+
     def set_value(self, value: str):
         if self.method == flags.DEFINE_boolean:
             if value == '1' or value == 'true':
@@ -162,7 +163,7 @@ class Hooks:
     @staticmethod
     def bucket_options(setting: SettingOptions):
         if not setting:
-            return
+            return ''
         client = storage.Client(project=args['gcp_project_name'])
         buckets = setting.custom_data['buckets'] = client.list_buckets()
         return '\n'.join(map(lambda x: '- ' + x, buckets))
