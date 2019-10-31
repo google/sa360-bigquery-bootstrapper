@@ -239,7 +239,7 @@ class Hooks:
                 print(setting.value, 'val')
             else:
                 cprint('Select a valid input option', 'red')
-                continue
+                return False
             if not setting:
                 return True
             client = storage.Client(project=args['gcp_project_name'].value)
