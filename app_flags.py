@@ -104,14 +104,15 @@ class Hooks:
         client = storage.Client()
         choose_another = False
         try:
-            bucket = client.get_bucket(setting)
+            return client.get_bucket(setting)
         except exceptions.NotFound as e:
             r = input(
                 "Cannot find bucket {0}. Create [y/n]? ".format(setting)
             )
             if r.lower() == 'y':
                 choose_another = True
-                client.create_bucket(
+                print(setting)
+                return client.create_bucket(
                     setting,
                     project=args['gcp_project_name'].value
                 )
