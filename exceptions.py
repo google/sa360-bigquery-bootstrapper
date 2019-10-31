@@ -2,5 +2,9 @@ class BaseBootstrapperException(Exception):
     pass
 
 
-class BootstrapperInternalErrorException(BaseBootstrapperException):
+class BootstrapperInternalError(BaseBootstrapperException):
+    pass
+
+
+class BootstrapperInputError(BaseBootstrapperException):
     pass
