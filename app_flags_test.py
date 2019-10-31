@@ -1,6 +1,6 @@
 import app_flags
 
-test = app_flags.SimpleFlag.create("Hint")
+test = app_flags.SettingOptions.create("Hint")
 test.value = "Test"
 
 assert(test[0].isalnum())
