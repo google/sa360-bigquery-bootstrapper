@@ -104,6 +104,7 @@ class Hooks:
         client = storage.Client()
         choose_another = False
         try:
+            print(setting)
             return client.get_bucket(setting)
         except exceptions.NotFound as e:
             r = input(
