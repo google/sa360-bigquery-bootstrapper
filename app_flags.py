@@ -20,7 +20,7 @@ class SimpleFlag(object, str):
     after: callable = None
 
     def __init__(self, helptext=None, default=None, method=flags.DEFINE_string,
-                 required=True, validation=None, show=None, after=None):
+                 required=True, validation=None, show=None, after=None, **kwargs):
         self.__value_set = False
         self.default = default
         self.help = helptext
