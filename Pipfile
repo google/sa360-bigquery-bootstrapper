@@ -8,6 +8,7 @@ verify_ssl = true
 [packages]
 absl-py = "*"
 google-cloud-bigquery = "*"
+google-cloud-storage = "*"
 typing = "*"
 pipenv = "*"
 termcolor = "*"
