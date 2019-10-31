@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="22334372-93bb-4286-bf78-27b1979ba3c5" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app_flags.py" beforeDir="false" afterPath="$PROJECT_DIR$/app_flags.py" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
@@ -75,8 +74,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/app_flags.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="450">
-              <caret line="30" column="35" selection-start-line="30" selection-start-column="35" selection-end-line="30" selection-end-column="35" />
+            <state relative-caret-position="1560">
+              <caret line="104" column="27" selection-start-line="104" selection-start-column="27" selection-end-line="104" selection-end-column="27" />
               <folding>
                 <element signature="e#0#22#0" expanded="true" />
               </folding>
@@ -257,12 +256,12 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1572284045934</updated>
-      <workItem from="1572284049720" duration="23631000" />
+      <workItem from="1572284049720" duration="23902000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="23631000" />
+    <option name="totallyTimeSpent" value="23902000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="2559" y="0" width="2562" height="1417" extended-state="6" />
@@ -273,9 +272,9 @@
       <window_info id="Capture Tool" />
       <window_info id="UI Designer" />
       <window_info id="Favorites" sideWeight="0.50057805" side_tool="true" visible="true" weight="0.18625894" />
-      <window_info active="true" content_ui="combo" id="Project" order="0" sideWeight="0.49942195" visible="true" weight="0.18625894" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49942195" visible="true" weight="0.18625894" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
-      <window_info anchor="bottom" id="Terminal" visible="true" weight="0.32945737" />
+      <window_info active="true" anchor="bottom" id="Terminal" visible="true" weight="0.32945737" />
       <window_info anchor="bottom" id="Docker" show_stripe_button="false" />
       <window_info anchor="bottom" id="Event Log" side_tool="true" />
       <window_info anchor="bottom" id="Database Changes" />
@@ -402,8 +401,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/app_flags.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="450">
-          <caret line="30" column="35" selection-start-line="30" selection-start-column="35" selection-end-line="30" selection-end-column="35" />
+        <state relative-caret-position="1560">
+          <caret line="104" column="27" selection-start-line="104" selection-start-column="27" selection-end-line="104" selection-end-column="27" />
           <folding>
             <element signature="e#0#22#0" expanded="true" />
           </folding>

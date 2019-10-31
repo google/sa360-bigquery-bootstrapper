@@ -3,13 +3,14 @@ from typing import Dict
 from typing import List
 from termcolor import cprint
 from google.cloud import storage
+from typing import overload
 
 FLAGS = flags.FLAGS
 
 StringList = List[str]
 
 
-class SimpleFlag(object, str):
+class SimpleFlag(str):
     default = None
     help = None
     method: callable = None
@@ -19,17 +20,22 @@ class SimpleFlag(object, str):
     show: callable = None
     after: callable = None
 
-    def __init__(self, helptext=None, default=None, method=flags.DEFINE_string,
-                 required=True, validation=None, show=None, after=None, **kwargs):
-        self.__value_set = False
-        self.default = default
-        self.help = helptext
-        self.method = method
-        self.required = required
-        self.validation = validation
-        self.show = show
-        self.after = after
-        super(str).__init__()
+    def __init__(self):
+        super().__init__()
+
+    @classmethod
+    def create(cls, helptext=None, default=None, method=flags.DEFINE_string,
+                 required=True, validation=None, show=None, after=None):
+        fl = cls()
+        fl.__value_set = False
+        fl.default = default
+        fl.help = helptext
+        fl.method = method
+        fl.required = required
+        fl.validation = validation
+        fl.show = show
+        fl.after = after
+        return fl
 
     @staticmethod
     def dash(v: str) -> str:
@@ -101,29 +107,29 @@ class Hooks:
 SimpleFlags = Dict[str, SimpleFlag]
 
 args: SimpleFlags = {
-    'gcp_project_name': SimpleFlag('GCP Project Name'),
-    'raw_dataset': SimpleFlag(
+    'gcp_project_name': SimpleFlag.create('GCP Project Name'),
+    'raw_dataset': SimpleFlag.create(
         'Where all raw BigQuery data is stored',
         default='raw'
     ),
-    'view_dataset': SimpleFlag(
+    'view_dataset': SimpleFlag.create(
         'Where all formatted BigQuery data is stored',
         default='views'
     ),
-    'agency_id': SimpleFlag('SA360 Agency ID'),
-    'advertiser_id': SimpleFlag(
+    'agency_id': SimpleFlag.create('SA360 Agency ID'),
+    'advertiser_id': SimpleFlag.create(
         'SA360 Advertiser IDs',
         method=flags.DEFINE_list
     ),
-    'historical_data': SimpleFlag(
+    'historical_data': SimpleFlag.create(
         'Include Historical Data?',
         method=flags.DEFINE_boolean
     ),
-    'storage_bucket': SimpleFlag(
+    'storage_bucket': SimpleFlag.create(
         'Storage Bucket Name',
         after=Hooks.create_bucket
     ),
-    'historical_table_name': SimpleFlag(
+    'historical_table_name': SimpleFlag.create(
         'Name of historical table',
         show=lambda: args['historical_data'].value
     ),
