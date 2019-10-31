@@ -7,17 +7,20 @@ from google.cloud import storage
 from google.api_core import exceptions
 from typing import overload
 
+from exceptions import BootstrapperInternalErrorException
+
 FLAGS = flags.FLAGS
 
 StringList = List[str]
 StringKeyDict = Dict[str, any]
 Buckets = List[Bucket]
 
+
 class SettingOptions(object):
     default = None
     help = None
     method: callable = None
-    value: str = None
+    value: str or int = None
     required: bool = False
     validation: callable = None
     show: callable = None
@@ -129,6 +132,17 @@ class Validator:
                 return False
         return True
 
+    @staticmethod
+    def check_buckets(s: SettingOptions, errors: list):
+        if 'buckets' not in s.custom_data:
+            raise BootstrapperInternalErrorException('No buckets set.')
+        if s.value is int and s.value <= len(s.custom_data['buckets']):
+            s.value = s.custom_data['buckets'][s.value - 1]
+        elif s.value is int:
+            errors.append('{} is an invalid selection.' + s.value)
+        elif s.value == 's':
+            s.value = input('Select project name: ')
+
 
 class Hooks:
     @staticmethod
@@ -200,7 +214,8 @@ args: SimpleFlags = {
     'storage_bucket': SettingOptions.create(
         'Storage Bucket Name',
         prompt=Hooks.bucket_options,
-        after=Hooks.create_bucket
+        after=Hooks.create_bucket,
+        validation=Validator.check_buckets,
     ),
     'historical_table_name': SettingOptions.create(
         'Name of historical table',
