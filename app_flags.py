@@ -168,9 +168,10 @@ class Hooks:
     @staticmethod
     def bucket_options(setting: SettingOptions):
         client = storage.Client(project=args['gcp_project_name'].value)
-        buckets = setting.custom_data['buckets'] = client.list_buckets()
-        result = '\n'.join(['1: {0}'.format(buckets[i])
-                            for i in range(len(buckets))])
+        buckets = setting.custom_data['buckets'] = list(client.list_buckets())
+        i = 0
+        result = '\n'.join(['{}: {}'.format(i, buckets[i])
+                            for b in range(len(buckets))])
         print(result)
         return result
 
