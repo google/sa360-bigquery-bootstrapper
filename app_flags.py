@@ -12,7 +12,7 @@ StringList = List[str]
 StringKeyDict = Dict[str, any]
 
 
-class SettingOptions(str):
+class SettingOptions(object):
     default = None
     help = None
     method: callable = None
@@ -86,6 +86,11 @@ class SettingOptions(str):
     def __str__(self):
         return self.value
 
+    def __repr__(self):
+        return '[{0}{1}]'.format(
+            self.help, ' (' + self.value + ')' if self.value else ''
+        )
+
     def __bool__(self):
         return bool(self.value)
 
@@ -129,7 +134,7 @@ class Hooks:
     def create_bucket(setting: SettingOptions):
         if not setting:
             return
-        client = storage.Client(project=args['gcp_project_name'])
+        client = storage.Client(project=args['gcp_project_name'].value)
 
         class ChooseAnother:
             toggle = False
@@ -143,7 +148,6 @@ class Hooks:
             )
             if r.lower() == 'y':
                 ChooseAnother.toggle = True
-                print(setting)
                 return client.create_bucket(
                     setting,
                     project=args['gcp_project_name'].value
@@ -162,7 +166,7 @@ class Hooks:
 
     @staticmethod
     def bucket_options(setting: SettingOptions):
-        client = storage.Client(project=args['gcp_project_name'])
+        client = storage.Client(project=args['gcp_project_name'].value)
         buckets = setting.custom_data['buckets'] = client.list_buckets()
         return '\n'.join(map(lambda x: '- ' + x, buckets))
 
