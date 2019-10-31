@@ -162,8 +162,6 @@ class Hooks:
 
     @staticmethod
     def bucket_options(setting: SettingOptions):
-        if not setting:
-            return ''
         client = storage.Client(project=args['gcp_project_name'])
         buckets = setting.custom_data['buckets'] = client.list_buckets()
         return '\n'.join(map(lambda x: '- ' + x, buckets))
