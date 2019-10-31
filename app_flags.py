@@ -156,7 +156,7 @@ class Hooks:
 
         ChooseAnother.toggle = False
         try:
-            return client.get_bucket(setting)
+            return client.get_bucket(setting.value)
         except exceptions.NotFound as e:
             r = input(
                 "Cannot find bucket {0}. Create [y/n]? ".format(setting)
@@ -164,7 +164,7 @@ class Hooks:
             if r.lower() == 'y':
                 ChooseAnother.toggle = True
                 return client.create_bucket(
-                    setting,
+                    setting.value,
                     project=args['gcp_project_name'].value
                 )
         except exceptions.Forbidden as e:
