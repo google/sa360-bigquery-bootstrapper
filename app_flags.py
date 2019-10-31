@@ -28,7 +28,7 @@ class SimpleFlag(str):
         self.validation = validation
         self.show = show
         self.after = after
-        super().__init__(self.value)
+        super().__init__()
 
     @staticmethod
     def dash(v: str) -> str:
