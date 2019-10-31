@@ -54,6 +54,7 @@ class SettingOptions(object):
             self.default
         ) if self.default is not None else ''
         prompt = ''
+        print('p', self.prompt is not None)
         if self.prompt is not None:
             prompt += '\n'
             if self.prompt is str:
@@ -62,7 +63,7 @@ class SettingOptions(object):
                 prompt += self.prompt(self)
             prompt += '\nInput: '
         return input(
-            '{0} ({1}){2}: '.format(self.help, k, default, prompt)
+            '{0} ({1})p{2}: '.format(self.help, k, default, prompt)
         )
 
     def set_value(self, value: str):
