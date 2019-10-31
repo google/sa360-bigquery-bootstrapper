@@ -263,10 +263,12 @@ class Hooks:
                 break
             except exceptions.Forbidden as e:
                 ChooseAnother.toggle = True
-                cprint('Please select a GCP bucket you own and have access to '
-                       'or double check your permissions. '
+                cprint('-------------------------------------\n'
+                       'Please select a GCP bucket you own and have access to '
+                       'or double check your permissions. \n'
                        'If you are having trouble finding an unclaimed unique '
-                       'name, consider adding your project name as a prefix.',
+                       'name, consider adding your project name as a prefix.\n'
+                       '-------------------------------------',
                        'red')
             if ChooseAnother.toggle:
                 setting.value = input(
