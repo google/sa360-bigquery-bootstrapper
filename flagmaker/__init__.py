@@ -28,7 +28,6 @@ class AbstractSettings(SettingOptions, ABC):
         Called from load_settings. Should not be called directly.
         """
         for k in self.args.keys():
-            print(FLAGS.get_flag_value(k, None))
             self.args[k].set_value(init=FLAGS.get_flag_value(k, None))
 
     @abstractmethod
