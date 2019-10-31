@@ -154,8 +154,8 @@ class SettingOptions(object):
                     self.value = self.default
                 else:
                     self.value = val
-                if self.__error:
-                    cprint(self.__error, 'red')
+                if self.__error is not False:
+                    cprint('error: ' + str(self.__error), 'red')
                     self.value = None
                     continue
             else:
