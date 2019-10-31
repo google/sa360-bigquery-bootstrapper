@@ -170,8 +170,9 @@ class Hooks:
         client = storage.Client(project=args['gcp_project_name'].value)
         buckets: Buckets = []
         buckets = setting.custom_data['buckets'] = client.list_buckets()
-        print([b for b in buckets])
-        return '\n'.join(map(lambda x: '- ' + str(x), buckets))
+        result = '\n'.join(map(lambda x: '- ' + str(x), buckets))
+        print(result)
+        return result
 
 
 SimpleFlags = Dict[str, SettingOptions]
