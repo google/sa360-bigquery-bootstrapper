@@ -60,7 +60,7 @@ class SettingOptions(str):
             if callable(self.prompt):
                 prompt += self.prompt(self)
             prompt += '\nInput: '
-        input(
+        return input(
             '{0} ({1}){2}: '.format(self.help, k, self.default, prompt)
         )
     def set_value(self, value: str):
@@ -224,7 +224,7 @@ def load_settings():
                 cprint('Interactive Setup', attrs=['bold'])
                 first = False
             while True:
-                setting.set_value(setting.get_prompt())
+                setting.set_value(setting.get_prompt(k))
                 if setting.value == '' and setting.default is not None:
                     setting.value = setting.default
                 validated = Validator.validate(setting)
