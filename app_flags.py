@@ -62,6 +62,7 @@ class SettingOptions(object):
             if callable(self.prompt):
                 prompt += self.prompt(self)
             prompt += '\nInput: '
+            print(prompt)
         return input(
             '{0} ({1})p{2}: '.format(self.help, k, default, prompt)
         )
