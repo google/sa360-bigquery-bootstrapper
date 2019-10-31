@@ -64,6 +64,9 @@ class SimpleFlag(str):
     def __str__(self):
         return self.value
 
+    def __bool__(self):
+        return bool(self.value)
+
 
 class Validator:
     @staticmethod
@@ -96,22 +99,33 @@ class Validator:
 class Hooks:
     @staticmethod
     def create_bucket(setting: SimpleFlag):
-        if not setting.value:
+        if not setting:
             return
         client = storage.Client()
+        choose_another = False
         try:
-            bucket = client.get_bucket(setting.value)
+            bucket = client.get_bucket(setting)
         except exceptions.NotFound as e:
             r = input(
-                "Cannot find bucket {0}. Create [y/n]? ".format(setting.value)
+                "Cannot find bucket {0}. Create [y/n]? ".format(setting)
             )
             if r.lower() == 'y':
+                choose_another = True
                 client.create_bucket(
-                    setting.value,
+                    setting,
                     project=args['gcp_project_name'].value
                 )
-            else:
-                raise e
+        except exceptions.Forbidden as e:
+            choose_another = True
+            cprint("Please select a GCP bucket you own and have access to or "
+                   "double check your permissions. If you are having trouble "
+                   "finding an unclaimed unique name, consider adding your "
+                   "project name as a prefix.", "red")
+        if choose_another:
+            setting.value = input(
+                "Press Ctrl+C to cancel or choose a different input: "
+            )
+            Hooks.create_bucket(setting)
 
 
 SimpleFlags = Dict[str, SimpleFlag]
