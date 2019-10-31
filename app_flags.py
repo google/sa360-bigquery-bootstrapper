@@ -155,7 +155,6 @@ class SettingOptions(object):
                     self.value = self.default
                 else:
                     self.value = val
-                print(self.__error)
                 if self.__error:
                     self.value = None
                     continue
@@ -238,7 +237,6 @@ class Hooks:
                     return False
             elif setting.value == 'c':
                 setting.value = input('Select project name: ')
-                print(setting.value, 'val')
             elif not ChooseAnother.toggle:
                 cprint('Select a valid input option', 'red')
                 return False
@@ -255,10 +253,13 @@ class Hooks:
                 )
                 if r.lower() == 'y':
                     ChooseAnother.toggle = True
-                    return client.create_bucket(
+                    result = client.create_bucket(
                         setting.value,
                         project=args['gcp_project_name'].value
                     )
+                    cprint('Created ' + setting.value, 'green', attrs=['bold'])
+                    print(result)
+                    return result
                 break
             except exceptions.Forbidden as e:
                 ChooseAnother.toggle = True
