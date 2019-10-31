@@ -1,6 +1,7 @@
 import app_flags
+import flagmaker.settings
 
-test = app_flags.SettingOption.create("Hint")
+test = flagmaker.settings.SettingOption.create("Hint")
 test.value = "Test"
 
 assert(test[0].isalnum())

@@ -1,17 +1,23 @@
-from absl import flags
 from absl import app
 from google.cloud import bigquery
+
 import app_flags
+from flagmaker import AbstractSettings
+from flagmaker import Config
 
 
 class Bootstrap:
-  settings: app_flags.Settings = None
+    settings: AbstractSettings = None
+    config: Config = None
 
-  def __init__(self):
-    app.run(self.run)
+    def __init__(self):
+        self.config: Config = Config(app_flags.AppSettings)
 
-  def run(self, args):
-    settings: app_flags.Settings = app_flags.load_settings()
-    client = bigquery.Client()
-    result = client.create_dataset(settings.raw_dataset)
-    print(result)
+    def run(self):
+        app.run(self.exec)
+
+    def exec(self, args):
+        self.settings: AbstractSettings = self.config.get()
+        client = bigquery.Client()
+        result = client.create_dataset(self.settings.raw_dataset)
+        print(result)
