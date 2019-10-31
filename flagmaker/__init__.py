@@ -27,9 +27,9 @@ class AbstractSettings(SettingOptions, ABC):
 
         Called from load_settings. Should not be called directly.
         """
-        self.assign_flags()
         for k in self.args.keys():
-            self[k].set_value(init=FLAGS.get_flag_value(k, None))
+            print(FLAGS.get_flag_value(k, None))
+            self.args[k].set_value(init=FLAGS.get_flag_value(k, None))
 
     @abstractmethod
     def settings(self) -> dict:
