@@ -239,39 +239,39 @@ class Hooks:
                 print(setting.value, 'val')
             else:
                 cprint('Select a valid input option', 'red')
-                return False
-            break
-        if not setting:
-            return True
-        client = storage.Client(project=args['gcp_project_name'].value)
+                continue
+            if not setting:
+                return True
+            client = storage.Client(project=args['gcp_project_name'].value)
 
-        class ChooseAnother:
-            toggle = False
+            class ChooseAnother:
+                toggle = False
 
-        ChooseAnother.toggle = False
-        try:
-            return client.get_bucket(setting.value)
-        except exceptions.NotFound as e:
-            r = input(
-                'Cannot find bucket {0}. Create [y/n]? '.format(setting)
-            )
-            if r.lower() == 'y':
-                ChooseAnother.toggle = True
-                return client.create_bucket(
-                    setting.value,
-                    project=args['gcp_project_name'].value
+            ChooseAnother.toggle = False
+            try:
+                return client.get_bucket(setting.value)
+            except exceptions.NotFound as e:
+                r = input(
+                    'Cannot find bucket {0}. Create [y/n]? '.format(setting)
                 )
-        except exceptions.Forbidden as e:
-            ChooseAnother.toggle = True
-            cprint('Please select a GCP bucket you own and have access to or '
-                   'double check your permissions. If you are having trouble '
-                   'finding an unclaimed unique name, consider adding your '
-                   'project name as a prefix.', 'red')
-        if ChooseAnother.toggle:
-            setting.value = input(
-                'Press Ctrl+C to cancel or choose a different input: '
-            )
-            Hooks.create_bucket(setting)
+                if r.lower() == 'y':
+                    ChooseAnother.toggle = True
+                    return client.create_bucket(
+                        setting.value,
+                        project=args['gcp_project_name'].value
+                    )
+                break
+            except exceptions.Forbidden as e:
+                ChooseAnother.toggle = True
+                cprint('Please select a GCP bucket you own and have access to '
+                       'or double check your permissions. '
+                       'If you are having trouble finding an unclaimed unique '
+                       'name, consider adding your project name as a prefix.',
+                       'red')
+            if ChooseAnother.toggle:
+                setting.value = input(
+                    'Press Ctrl+C to cancel or choose a different input: '
+                )
 
     @staticmethod
     def bucket_options(setting: SettingOptions):
