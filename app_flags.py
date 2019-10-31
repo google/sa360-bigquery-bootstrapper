@@ -156,6 +156,7 @@ class SettingOptions(object):
                     self.value = val
                 if self.__error:
                     cprint(self.__error, 'red')
+                    self.value = None
                     continue
             else:
                 self.value = value
