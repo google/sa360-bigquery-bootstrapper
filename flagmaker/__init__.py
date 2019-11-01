@@ -55,6 +55,9 @@ class AbstractSettings(SettingsInterface):
         self.args = self.settings()
         self.assign_flags()
 
+    def __repr__(self):
+        print(self.args)
+
 
 AbstractSettingsClass = ClassVar[AbstractSettings]
 
