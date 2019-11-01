@@ -19,5 +19,7 @@ class Bootstrap:
     def exec(self, args):
         self.settings: AbstractSettings = self.config.get()
         client = bigquery.Client()
-        result = client.create_dataset(self.settings['raw_dataset'].value)
+        val = self.settings['raw_dataset']
+        print(val)
+        result = client.create_dataset(val)
         print(result)
