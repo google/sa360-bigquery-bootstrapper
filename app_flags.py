@@ -87,6 +87,9 @@ class Hooks:
             elif setting.value == 'c':
                 setting.value = input('Select project name: ')
             elif not ChooseAnother.toggle:
+                print(self.valid_bucket)
+                if self.valid_bucket:
+                    return True
                 cprint('Select a valid input option', 'red')
                 return False
             if not setting:
@@ -107,7 +110,7 @@ class Hooks:
                     ChooseAnother.toggle = True
                     result = client.create_bucket(
                         setting.value,
-                        project=args['gcp_project_name'].value
+                        project=settings['gcp_project_name'].value
                     )
                     cprint('Created ' + setting.value, 'green', attrs=['bold'])
                     setting.value = result
