@@ -76,6 +76,7 @@ class Hooks:
                 raise FlagMarkerInternalError('No buckets set.')
             if setting.value.isnumeric():
                 val = int(setting.value)
+                print(val, len(setting.custom_data['buckets']))
                 if val <= len(setting.custom_data['buckets']):
                     setting.value = setting.custom_data['buckets'][val - 1].name
                     self.valid_bucket = True
