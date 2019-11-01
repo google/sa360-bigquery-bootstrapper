@@ -65,7 +65,6 @@ class Hooks:
 
     def create_bucket(self, setting: SettingOption) -> bool:
         if self.valid_bucket:
-            print('done')
             return True
         settings = setting.settings
 

@@ -24,6 +24,7 @@ class SettingOption(SettingOptionInterface):
     after: callable = None
     prompt: callable or str = None
     custom_data: StringKeyDict = {}
+    called: dict = {}
     __error: bool = False
 
     def __init__(self):
@@ -75,7 +76,8 @@ class SettingOption(SettingOptionInterface):
             value = int(value)
         self.__value.set_val(value)
         # perform actions
-        if self.after is not None:
+        if self.after is not None and self.after not in self.called:
+            self.called[self.after] = True
             self.__error = not self.after(self)
         else:
             self.__error = False
