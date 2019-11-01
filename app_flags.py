@@ -63,6 +63,7 @@ class Hooks:
                 val = int(setting.value)
                 if val <= len(setting.custom_data['buckets']):
                     setting.value = setting.custom_data['buckets'][val - 1]
+                    break
                 else:
                     cprint('Invalid selection', 'red', attrs=['bold'])
                     return False
