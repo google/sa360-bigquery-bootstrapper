@@ -1,4 +1,3 @@
-import app_flags
 import flagmaker.settings
 
 test = flagmaker.settings.SettingOption.create("Hint")
