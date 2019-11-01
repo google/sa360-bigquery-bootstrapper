@@ -78,6 +78,7 @@ class Hooks:
                 if val <= len(setting.custom_data['buckets']):
                     setting.value = setting.custom_data['buckets'][val - 1].name
                     self.valid_bucket = True
+                    print(self.valid_bucket)
                     return True
                 else:
                     cprint('Invalid selection', 'red', attrs=['bold'])
@@ -88,12 +89,14 @@ class Hooks:
                 cprint('Select a valid input option', 'red')
                 return False
             if not setting:
+                self.valid_bucket = True
                 return True
             client = storage.Client(project=settings['gcp_project_name'].value)
 
             ChooseAnother.toggle = False
             try:
                 setting.value = client.get_bucket(setting.value).name
+                self.valid_bucket = True
                 return True
             except exceptions.NotFound as e:
                 r = input(
@@ -107,6 +110,7 @@ class Hooks:
                     )
                     cprint('Created ' + setting.value, 'green', attrs=['bold'])
                     setting.value = result
+                    self.valid_bucket = True
                     return True
                 break
             except exceptions.Forbidden as e:
