@@ -15,7 +15,6 @@ class AppSettings(AbstractSettings):
     Add all flags under settings()
     """
     def settings(self) -> dict:
-        hooks = Hooks()
         args = {
             'gcp_project_name': SettingOption.create('GCP Project Name'),
             'raw_dataset': SettingOption.create(
@@ -43,7 +42,7 @@ class AppSettings(AbstractSettings):
                 self,
                 'Storage Bucket Name',
                 prompt=Hooks.bucket_options,
-                after=hooks.create_bucket,
+                after=Hooks.create_bucket,
             ),
             'historical_table_name': SettingOption.create(
                 self,
@@ -60,12 +59,8 @@ class Hooks:
     Includes validation hooks, after hooks, and more.
     """
 
-    def __init__(self):
-        self.valid_bucket = False
-
-    def create_bucket(self, setting: SettingOption) -> bool:
-        if self.valid_bucket:
-            return True
+    @staticmethod
+    def create_bucket(setting: SettingOption) -> bool:
         settings = setting.settings
 
         class ChooseAnother:
@@ -78,9 +73,7 @@ class Hooks:
                 print(val, len(setting.custom_data['buckets']))
                 if val <= len(setting.custom_data['buckets']):
                     value = setting.custom_data['buckets'][val - 1].name
-                    self.valid_bucket = True
                     setting.value = value
-                    print('bucket', self.valid_bucket)
                     return True
                 else:
                     cprint('Invalid selection', 'red', attrs=['bold'])
@@ -88,20 +81,15 @@ class Hooks:
             elif setting.value == 'c':
                 setting.value = input('Select project name: ')
             elif not ChooseAnother.toggle:
-                print(self.valid_bucket)
-                if self.valid_bucket:
-                    return True
                 cprint('Select a valid input option', 'red')
                 return False
             if not setting:
-                self.valid_bucket = True
                 return True
             client = storage.Client(project=settings['gcp_project_name'].value)
 
             ChooseAnother.toggle = False
             try:
                 setting.value = client.get_bucket(setting.value).name
-                self.valid_bucket = True
                 return True
             except exceptions.NotFound as e:
                 r = input(
@@ -115,7 +103,6 @@ class Hooks:
                     )
                     cprint('Created ' + setting.value, 'green', attrs=['bold'])
                     setting.value = result
-                    self.valid_bucket = True
                     return True
                 break
             except exceptions.Forbidden as e:

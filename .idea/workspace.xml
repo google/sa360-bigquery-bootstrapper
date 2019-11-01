@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="22334372-93bb-4286-bf78-27b1979ba3c5" name="Default Changelist" comment="" />
+    <list default="true" id="22334372-93bb-4286-bf78-27b1979ba3c5" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/app_flags.py" beforeDir="false" afterPath="$PROJECT_DIR$/app_flags.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flagmaker/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/flagmaker/settings.py" afterDir="false" />
+    </list>
     <ignored path="$PROJECT_DIR$/out/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -54,8 +57,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/app_flags.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="571">
-              <caret line="65" column="8" selection-start-line="65" selection-start-column="8" selection-end-line="65" selection-end-column="8" />
+            <state relative-caret-position="541">
+              <caret line="87" column="27" selection-start-line="87" selection-start-column="27" selection-end-line="87" selection-end-column="27" />
               <folding>
                 <element signature="e#0#22#0" expanded="true" />
               </folding>
@@ -66,8 +69,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/flagmaker/settings.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="271">
-              <caret line="78" column="36" selection-start-line="78" selection-start-column="36" selection-end-line="78" selection-end-column="36" />
+            <state relative-caret-position="301">
+              <caret line="68" selection-start-line="68" selection-end-line="68" />
               <folding>
                 <element signature="e#0#23#0" expanded="true" />
               </folding>
@@ -145,6 +148,7 @@
       <find>prompt=</find>
       <find>Select a valid</find>
       <find>after(</find>
+      <find>Select a va</find>
     </findStrings>
   </component>
   <component name="G3PluginsProjectSettings">
@@ -174,9 +178,9 @@
         <option value="$PROJECT_DIR$/run.py" />
         <option value="$PROJECT_DIR$/flagmaker/building_blocks.py" />
         <option value="$PROJECT_DIR$/bootstrapper.py" />
-        <option value="$PROJECT_DIR$/flagmaker/settings.py" />
         <option value="$PROJECT_DIR$/flagmaker/__init__.py" />
         <option value="$PROJECT_DIR$/app_flags.py" />
+        <option value="$PROJECT_DIR$/flagmaker/settings.py" />
       </list>
     </option>
   </component>
@@ -296,16 +300,15 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1572284045934</updated>
-      <workItem from="1572284049720" duration="48482000" />
+      <workItem from="1572284049720" duration="48831000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="48482000" />
+    <option name="totallyTimeSpent" value="48831000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="2559" y="0" width="2562" height="1417" extended-state="6" />
-    <editor active="true" />
     <layout>
       <window_info id="Designer" />
       <window_info id="Image Layers" />
@@ -533,8 +536,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/app_flags.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="571">
-          <caret line="65" column="8" selection-start-line="65" selection-start-column="8" selection-end-line="65" selection-end-column="8" />
+        <state relative-caret-position="541">
+          <caret line="87" column="27" selection-start-line="87" selection-start-column="27" selection-end-line="87" selection-end-column="27" />
           <folding>
             <element signature="e#0#22#0" expanded="true" />
           </folding>
@@ -543,8 +546,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/flagmaker/settings.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="271">
-          <caret line="78" column="36" selection-start-line="78" selection-start-column="36" selection-end-line="78" selection-end-column="36" />
+        <state relative-caret-position="301">
+          <caret line="68" selection-start-line="68" selection-end-line="68" />
           <folding>
             <element signature="e#0#23#0" expanded="true" />
           </folding>
