@@ -2,7 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="22334372-93bb-4286-bf78-27b1979ba3c5" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/app_flags.py" beforeDir="false" afterPath="$PROJECT_DIR$/app_flags.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flagmaker/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/flagmaker/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flagmaker/building_blocks.py" beforeDir="false" afterPath="$PROJECT_DIR$/flagmaker/building_blocks.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flagmaker/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/flagmaker/settings.py" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -23,8 +26,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/bootstrapper.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="195">
-              <caret line="13" column="56" lean-forward="true" selection-start-line="13" selection-start-column="56" selection-end-line="13" selection-end-column="56" />
+            <state relative-caret-position="315">
+              <caret line="21" column="31" selection-start-line="21" selection-start-column="31" selection-end-line="21" selection-end-column="31" />
               <folding>
                 <element signature="e#0#20#0" expanded="true" />
               </folding>
@@ -33,10 +36,10 @@
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/sa360-bigquery-bootstrapper.iml">
+        <entry file="file://$PROJECT_DIR$/../.local/share/virtualenvs/sa360-bigquery-bootstrapper-exg6BoZe/lib/python3.7/site-packages/google/cloud/bigquery/client.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="240">
-              <caret line="16" column="8" selection-start-line="16" selection-start-column="8" selection-end-line="16" selection-end-column="8" />
+            <state relative-caret-position="279">
+              <caret line="344" column="8" selection-start-line="344" selection-start-column="8" selection-end-line="344" selection-end-column="8" />
             </state>
           </provider>
         </entry>
@@ -53,11 +56,11 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/app_flags.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="150">
-              <caret line="10" column="23" lean-forward="true" selection-start-line="10" selection-start-column="23" selection-end-line="10" selection-end-column="23" />
+            <state relative-caret-position="530">
+              <caret line="106" column="40" lean-forward="true" selection-start-line="106" selection-start-column="40" selection-end-line="106" selection-end-column="40" />
               <folding>
                 <element signature="e#0#22#0" expanded="true" />
               </folding>
@@ -65,11 +68,44 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/flagmaker/settings.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="600">
+              <caret line="55" column="52" selection-start-line="55" selection-start-column="52" selection-end-line="55" selection-end-column="52" />
+              <folding>
+                <element signature="e#0#23#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$APPLICATION_HOME_DIR$/plugins/python/helpers/typeshed/stdlib/3/builtins.pyi">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="271">
+              <caret line="777" column="4" selection-start-line="777" selection-start-column="4" selection-end-line="777" selection-end-column="4" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/flagmaker/__init__.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="575">
-              <caret line="60" selection-start-line="60" selection-end-line="60" />
+            <state relative-caret-position="570">
+              <caret line="42" column="55" selection-start-line="42" selection-start-column="55" selection-end-line="42" selection-end-column="55" />
+              <folding>
+                <element signature="e#0#19#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/flagmaker/building_blocks.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="785">
+              <caret line="88" column="12" selection-start-line="88" selection-start-column="12" selection-end-line="88" selection-end-column="12" />
               <folding>
                 <element signature="e#0#19#0" expanded="true" />
               </folding>
@@ -95,36 +131,6 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../.local/share/virtualenvs/sa360-bigquery-bootstrapper-exg6BoZe/lib/python3.7/site-packages/absl/flags/_flagvalues.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="271">
-              <caret line="79" column="6" selection-start-line="79" selection-start-column="6" selection-end-line="79" selection-end-column="6" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/flagmaker/building_blocks.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="470">
-              <caret line="34" column="52" selection-start-line="34" selection-start-column="52" selection-end-line="34" selection-end-column="52" />
-              <folding>
-                <element signature="e#0#19#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/flagmaker/exceptions.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="195">
-              <caret line="13" column="8" lean-forward="true" selection-start-line="13" selection-start-column="8" selection-end-line="13" selection-end-column="8" />
-            </state>
-          </provider>
-        </entry>
-      </file>
     </leaf>
   </component>
   <component name="FileTemplateManagerImpl">
@@ -140,6 +146,7 @@
       <find>assign_flags</find>
       <find>SettingOptions</find>
       <find>load_se</find>
+      <find>prompt(</find>
     </findStrings>
   </component>
   <component name="G3PluginsProjectSettings">
@@ -165,13 +172,13 @@
         <option value="$PROJECT_DIR$/flagmaker.py" />
         <option value="$PROJECT_DIR$/app_types.py" />
         <option value="$PROJECT_DIR$/flagmaker/sanity.py" />
-        <option value="$PROJECT_DIR$/flagmaker/settings.py" />
-        <option value="$PROJECT_DIR$/app_flags.py" />
-        <option value="$PROJECT_DIR$/flagmaker/building_blocks.py" />
         <option value="$PROJECT_DIR$/bootstrapper.py" />
         <option value="$PROJECT_DIR$/flagmaker/exceptions.py" />
         <option value="$PROJECT_DIR$/run.py" />
+        <option value="$PROJECT_DIR$/flagmaker/building_blocks.py" />
         <option value="$PROJECT_DIR$/flagmaker/__init__.py" />
+        <option value="$PROJECT_DIR$/flagmaker/settings.py" />
+        <option value="$PROJECT_DIR$/app_flags.py" />
       </list>
     </option>
   </component>
@@ -291,12 +298,12 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1572284045934</updated>
-      <workItem from="1572284049720" duration="45302000" />
+      <workItem from="1572284049720" duration="47024000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="45302000" />
+    <option name="totallyTimeSpent" value="47024000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="2559" y="0" width="2562" height="1417" extended-state="6" />
@@ -406,13 +413,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$APPLICATION_HOME_DIR$/plugins/python/helpers/typeshed/stdlib/3/builtins.pyi">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="271">
-          <caret line="777" column="4" selection-start-line="777" selection-start-column="4" selection-end-line="777" selection-end-column="4" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/flagmaker.py">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
@@ -443,27 +443,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/flagmaker/settings.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="150">
-          <caret line="10" column="21" selection-start-line="10" selection-start-column="21" selection-end-line="10" selection-end-column="21" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/../.local/share/virtualenvs/sa360-bigquery-bootstrapper-exg6BoZe/lib/python3.7/site-packages/absl/flags/_flagvalues.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="271">
           <caret line="79" column="6" selection-start-line="79" selection-start-column="6" selection-end-line="79" selection-end-column="6" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/flagmaker/building_blocks.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="470">
-          <caret line="34" column="52" selection-start-line="34" selection-start-column="52" selection-end-line="34" selection-end-column="52" />
-          <folding>
-            <element signature="e#0#19#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -507,30 +490,64 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/bootstrapper.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="195">
-          <caret line="13" column="56" lean-forward="true" selection-start-line="13" selection-start-column="56" selection-end-line="13" selection-end-column="56" />
+        <state relative-caret-position="315">
+          <caret line="21" column="31" selection-start-line="21" selection-start-column="31" selection-end-line="21" selection-end-column="31" />
           <folding>
             <element signature="e#0#20#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/app_flags.py">
+    <entry file="file://$PROJECT_DIR$/../.local/share/virtualenvs/sa360-bigquery-bootstrapper-exg6BoZe/lib/python3.7/site-packages/google/cloud/bigquery/client.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="150">
-          <caret line="10" column="23" lean-forward="true" selection-start-line="10" selection-start-column="23" selection-end-line="10" selection-end-column="23" />
-          <folding>
-            <element signature="e#0#22#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="279">
+          <caret line="344" column="8" selection-start-line="344" selection-start-column="8" selection-end-line="344" selection-end-column="8" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/flagmaker/__init__.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="575">
-          <caret line="60" selection-start-line="60" selection-end-line="60" />
+        <state relative-caret-position="570">
+          <caret line="42" column="55" selection-start-line="42" selection-start-column="55" selection-end-line="42" selection-end-column="55" />
           <folding>
             <element signature="e#0#19#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$APPLICATION_HOME_DIR$/plugins/python/helpers/typeshed/stdlib/3/builtins.pyi">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="271">
+          <caret line="777" column="4" selection-start-line="777" selection-start-column="4" selection-end-line="777" selection-end-column="4" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/flagmaker/building_blocks.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="785">
+          <caret line="88" column="12" selection-start-line="88" selection-start-column="12" selection-end-line="88" selection-end-column="12" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/flagmaker/settings.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="600">
+          <caret line="55" column="52" selection-start-line="55" selection-start-column="52" selection-end-line="55" selection-end-column="52" />
+          <folding>
+            <element signature="e#0#23#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app_flags.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="530">
+          <caret line="106" column="40" lean-forward="true" selection-start-line="106" selection-start-column="40" selection-end-line="106" selection-end-column="40" />
+          <folding>
+            <element signature="e#0#22#0" expanded="true" />
           </folding>
         </state>
       </provider>

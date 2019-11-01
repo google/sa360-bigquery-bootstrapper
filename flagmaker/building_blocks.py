@@ -73,3 +73,21 @@ class Value(object):
 
     def __bool__(self):
         return self.__value_set
+
+
+class SettingsInterface(ABC):
+    @abstractmethod
+    def load_settings(self):
+        pass
+
+    @abstractmethod
+    def settings(self) -> dict:
+        pass
+
+    @abstractmethod
+    def start(self):
+        pass
+
+    @abstractmethod
+    def __getitem__(self, item):
+        pass

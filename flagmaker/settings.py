@@ -3,6 +3,7 @@ from typing import Dict
 from absl import flags
 from termcolor import cprint
 
+from .building_blocks import SettingsInterface
 from flagmaker.building_blocks import SettingOptionInterface
 from flagmaker.hints import StringKeyDict
 from .exceptions import FlagMakerInputError
@@ -42,7 +43,7 @@ class SettingOption(SettingOptionInterface):
         fl.prompt = prompt
         return fl
 
-    def get_prompt(self, k):
+    def get_prompt(self, k, settings: SettingsInterface):
         default = ' [{0}]'.format(
             self.default
         ) if self.default is not None else ''
@@ -52,7 +53,7 @@ class SettingOption(SettingOptionInterface):
             if self.prompt is str:
                 prompt += self.prompt
             if callable(self.prompt):
-                prompt += self.prompt(self)
+                prompt += self.prompt(self, settings)
             prompt += '\nInput'
         return '{} ({}){}{}: '.format(self.help, k, default, prompt)
 

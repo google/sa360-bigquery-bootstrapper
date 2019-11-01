@@ -5,6 +5,7 @@ from termcolor import cprint
 
 from flagmaker import AbstractSettings
 from flagmaker import SettingOption
+from flagmaker.building_blocks import SettingsInterface
 from flagmaker.exceptions import FlagMarkerInternalError
 
 
@@ -107,8 +108,8 @@ class Hooks:
                 )
 
     @staticmethod
-    def bucket_options(setting: SettingOption):
-        client = storage.Client(project=args['gcp_project_name'].value)
+    def bucket_options(setting: SettingOption, settings: SettingsInterface):
+        client = storage.Client(project=settings['gcp_project_name'].value)
         buckets = setting.custom_data['buckets'] = list(client.list_buckets())
         bucket_size = len(buckets)
         result = '\n'.join(['{}: {}'.format(b+1, buckets[b])
