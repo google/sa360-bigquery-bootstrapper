@@ -1,6 +1,8 @@
 from absl import app
+from google.api_core.exceptions import Conflict
 from google.cloud import bigquery
 from google.cloud.bigquery.dataset import DatasetListItem
+from termcolor import cprint
 
 import app_flags
 from flagmaker import AbstractSettings
@@ -30,4 +32,7 @@ class Bootstrap:
             dd = d # type : DatasetListItem
             print(dd.friendly_name)
         print(datasets)
-        result = client.create_dataset(dataset)
+        try:
+            result = client.create_dataset(dataset)
+        except Conflict:
+            cprint('Already have project', 'green', attrs=['bold'])
