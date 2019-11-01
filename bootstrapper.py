@@ -9,6 +9,10 @@ from flagmaker import AbstractSettings
 from flagmaker import Config
 from google.cloud.bigquery.dataset import Dataset
 
+class Datasets:
+    raw = None
+    views = None
+
 class Bootstrap:
     settings: AbstractSettings = None
     config: Config = None
@@ -24,15 +28,13 @@ class Bootstrap:
         project = str(self.settings['gcp_project_name'])
 
         client = bigquery.Client(project=project)  # type : bigquery.Client
-        dataset = str(self.settings['raw_dataset'])
-        dataset = Dataset.from_string('{0}.{1}'.format(project, dataset))
-        datasets = client.list_datasets(project)
-        # type : DatasetListItem
-        for d in datasets:
-            dd = d # type : DatasetListItem
-            print(dd.friendly_name)
-        print(datasets)
-        try:
-            result = client.create_dataset(dataset)
-        except Conflict:
-            cprint('Already have project', 'green', attrs=['bold'])
+
+        for k, v in (('raw', 'raw_dataset'), ('views', 'view_dataset')):
+            dataset = str(self.settings[v])
+            dataset = Dataset.from_string('{0}.{1}'.format(project, dataset))
+
+            try:
+                setattr(Dataset, k, client.create_dataset(dataset))
+                cprint('Created dataset {}'.format(dataset))
+            except Conflict:
+                cprint('Already have dataset {}'.format(dataset), 'green')
