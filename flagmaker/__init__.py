@@ -38,7 +38,7 @@ class AbstractSettings(SettingOptions, ABC):
     def load_settings(cls):
         s: AbstractSettings = cls()
         first = True
-        for k in s.keys():
+        for k in s.args.keys():
             setting: SettingOption = s[k]
             if setting.maybe_needs_input():
                 if first:
@@ -66,11 +66,13 @@ class Config(object):
     This will bootstrap the settings class correctly.
     """
     def __init__(self, s: AbstractSettingsClass):
-        self.instance = s.load_settings()
+        self.s = s
+        self.instance = None
 
     def get(self) -> AbstractSettings:
         if not FLAGS.is_parsed():
             raise FlagMakerConfigurationError('Do not call this '
                                               'method until after app.run()')
+        self.instance: AbstractSettings = self.s.load_settings()
         self.instance.start()
         return self.instance
