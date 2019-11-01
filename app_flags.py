@@ -18,28 +18,34 @@ class AppSettings(AbstractSettings):
         args = {
             'gcp_project_name': SettingOption.create('GCP Project Name'),
             'raw_dataset': SettingOption.create(
+                self,
                 'Dataset where raw data will be stored',
                 default='raw'
             ),
             'view_dataset': SettingOption.create(
+                self,
                 'Dataset where view data will be generated and stored',
                 default='views'
             ),
-            'agency_id': SettingOption.create('SA360 Agency ID'),
+            'agency_id': SettingOption.create(self, 'SA360 Agency ID'),
             'advertiser_id': SettingOption.create(
+                self,
                 'SA360 Advertiser IDs',
                 method=flags.DEFINE_list
             ),
             'historical_data': SettingOption.create(
+                self,
                 'Include Historical Data?',
                 method=flags.DEFINE_boolean
             ),
             'storage_bucket': SettingOption.create(
+                self,
                 'Storage Bucket Name',
                 prompt=Hooks.bucket_options,
                 after=Hooks.create_bucket,
             ),
             'historical_table_name': SettingOption.create(
+                self,
                 'Name of historical table',
                 show=lambda: args['historical_data'].value
             ),
@@ -54,6 +60,7 @@ class Hooks:
     """
     @staticmethod
     def create_bucket(setting: SettingOption) -> bool:
+        settings = setting.settings
         class ChooseAnother:
             toggle = False
         while True:
@@ -74,7 +81,7 @@ class Hooks:
                 return False
             if not setting:
                 return True
-            client = storage.Client(project=args['gcp_project_name'].value)
+            client = storage.Client(project=settings['gcp_project_name'].value)
 
             ChooseAnother.toggle = False
             try:
@@ -109,7 +116,8 @@ class Hooks:
                 )
 
     @staticmethod
-    def bucket_options(setting: SettingOption, settings: SettingsInterface):
+    def bucket_options(setting: SettingOption):
+        settings = setting.settings
         client = storage.Client(project=settings['gcp_project_name'].value)
         buckets = setting.custom_data['buckets'] = list(client.list_buckets())
         bucket_size = len(buckets)

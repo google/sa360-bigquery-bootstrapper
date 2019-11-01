@@ -13,6 +13,7 @@ from .building_blocks import ValueType
 
 
 class SettingOption(SettingOptionInterface):
+    settings: SettingsInterface = None
     default = None
     help = None
     method: callable = None
@@ -29,10 +30,11 @@ class SettingOption(SettingOptionInterface):
         self.__value = Value()
 
     @classmethod
-    def create(cls, helptext=None, default=None, method=flags.DEFINE_string,
-        required=True, validation=None, show=None, after=None,
-        prompt=None):
+    def create(cls, settings: SettingsInterface, helptext=None, default=None,
+               method=flags.DEFINE_string, required=True, validation=None,
+               show=None, after=None, prompt=None):
         fl = cls()
+        fl.settings = settings
         fl.default = default
         fl.help = helptext
         fl.method = method
@@ -43,7 +45,7 @@ class SettingOption(SettingOptionInterface):
         fl.prompt = prompt
         return fl
 
-    def get_prompt(self, k, settings: SettingsInterface):
+    def get_prompt(self, k):
         default = ' [{0}]'.format(
             self.default
         ) if self.default is not None else ''
@@ -53,13 +55,9 @@ class SettingOption(SettingOptionInterface):
             if self.prompt is str:
                 prompt += self.prompt
             if callable(self.prompt):
-                prompt += self.prompt(self, settings)
+                prompt += self.prompt(self)
             prompt += '\nInput'
         return '{} ({}){}{}: '.format(self.help, k, default, prompt)
-
-    def set_bool(self, value):
-        self.value_type = ValueType.BOOLEAN
-        self.bool_value = value
 
     @property
     def value(self):
@@ -87,7 +85,7 @@ class SettingOption(SettingOptionInterface):
             num_opts = int(value != '') + int(prompt != '') + int(init != '')
             if num_opts != 1:
                 raise FlagMakerInputError('Need to choose either '
-                                             'init, value or prompt')
+                                          'init, value or prompt')
             if init is None:
                 return
             elif init != '':
