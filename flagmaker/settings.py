@@ -92,7 +92,6 @@ class SettingOption(SettingOptionInterface):
                 return
             elif init != '':
                 self._value.set_val(init)
-                print(self._value)
                 return
             if prompt != '':
                 val = input(prompt)
@@ -123,7 +122,7 @@ class SettingOption(SettingOptionInterface):
         return self.method
 
     def __str__(self):
-        return self.value
+        return self.value if self.value is not None else ''
 
     def __repr__(self):
         return '[{0}{1}]'.format(
