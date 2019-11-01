@@ -1,5 +1,6 @@
 from absl import app
 from google.cloud import bigquery
+from google.cloud.bigquery.dataset import DatasetListItem
 
 import app_flags
 from flagmaker import AbstractSettings
@@ -24,5 +25,9 @@ class Bootstrap:
         dataset = str(self.settings['raw_dataset'])
         dataset = Dataset.from_string('{0}.{1}'.format(project, dataset))
         datasets = client.list_datasets(project)
+        # type : DatasetListItem
+        for d in datasets:
+            dd = d # type : DatasetListItem
+            print(dd.friendly_name)
         print(datasets)
         result = client.create_dataset(dataset)
