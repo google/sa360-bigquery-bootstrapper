@@ -17,7 +17,7 @@ class SettingOption(SettingOptionInterface):
     default = None
     help = None
     method: callable = None
-    __value: Value = None
+    _value: Value = None
     required: bool = False
     validation: callable = None
     show: callable = None
@@ -28,7 +28,7 @@ class SettingOption(SettingOptionInterface):
     __error: bool = False
 
     def __init__(self):
-        self.__value = Value()
+        self._value = Value()
 
     @classmethod
     def create(cls, settings: SettingsInterface, helptext=None, default=None,
@@ -62,7 +62,7 @@ class SettingOption(SettingOptionInterface):
 
     @property
     def value(self):
-        return self.__value.get_val()
+        return self._value.get_val()
 
     @value.setter
     def value(self, value):
@@ -74,7 +74,7 @@ class SettingOption(SettingOptionInterface):
                 return
         elif self.method == flags.DEFINE_integer:
             value = int(value)
-        self.__value.set_val(value)
+        self._value.set_val(value)
         # perform actions
         if self.after is not None and self.after not in self.called:
             self.called[self.after] = True
@@ -91,7 +91,8 @@ class SettingOption(SettingOptionInterface):
             if init is None:
                 return
             elif init != '':
-                self.__value.set_val(init)
+                self._value.set_val(init)
+                print(self._value)
                 return
             if prompt != '':
                 val = input(prompt)
@@ -112,7 +113,7 @@ class SettingOption(SettingOptionInterface):
                 cprint('Required Field', 'red')
 
     def value_explicitly_set(self) -> bool:
-        return bool(self.__value)
+        return bool(self._value)
 
     def maybe_needs_input(self):
         return not self.value_explicitly_set() and (
