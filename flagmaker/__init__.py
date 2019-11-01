@@ -40,7 +40,6 @@ class AbstractSettings(SettingsInterface):
                     cprint('Interactive Setup', attrs=['bold'])
                     first = False
                 setting.set_value(prompt=setting.get_prompt(k))
-        self.args: dict = self.settings()
         return self
 
     def assign_flags(self) -> flags:

@@ -11,6 +11,7 @@ from .sanity import Validator
 from .building_blocks import Value
 from .building_blocks import ValueType
 
+
 class SettingOption(SettingOptionInterface):
     settings: SettingsInterface = None
     default = None
@@ -87,11 +88,13 @@ class SettingOption(SettingOptionInterface):
             if num_opts != 1:
                 raise FlagMakerInputError('Need to choose either '
                                           'init, value or prompt')
+
             if init is None:
                 return
             elif init != '':
                 self._value.set_val(init)
                 return
+
             if prompt != '':
                 val = input(prompt)
                 if val == '' and self.default is not None:
@@ -103,6 +106,7 @@ class SettingOption(SettingOptionInterface):
                     continue
             else:
                 self.value = value
+
             if not Validator.validate(self):
                 continue
             if self.value_explicitly_set() or not self.required:

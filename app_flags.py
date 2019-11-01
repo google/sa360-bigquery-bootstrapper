@@ -14,6 +14,7 @@ class AppSettings(AbstractSettings):
 
     Add all flags under settings()
     """
+
     def settings(self) -> dict:
         args = {
             'gcp_project_name': SettingOption.create('GCP Project Name'),
