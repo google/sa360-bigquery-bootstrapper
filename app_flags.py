@@ -78,8 +78,9 @@ class Hooks:
                 val = int(setting.value)
                 print(val, len(setting.custom_data['buckets']))
                 if val <= len(setting.custom_data['buckets']):
-                    setting.value = setting.custom_data['buckets'][val - 1].name
+                    value = setting.custom_data['buckets'][val - 1].name
                     self.valid_bucket = True
+                    setting.value = value
                     print('bucket', self.valid_bucket)
                     return True
                 else:
