@@ -4,6 +4,7 @@ from google.cloud import bigquery
 import app_flags
 from flagmaker import AbstractSettings
 from flagmaker import Config
+from google.cloud.bigquery.dataset import Dataset
 
 
 class Bootstrap:
@@ -20,6 +21,7 @@ class Bootstrap:
         self.settings: AbstractSettings = self.config.get()
         client = bigquery.Client()
         val = self.settings['raw_dataset']
+        dataset = Dataset(val)
         print(self.settings)
-        result = client.create_dataset(val)
+        result = client.create_dataset(dataset)
         print(result)

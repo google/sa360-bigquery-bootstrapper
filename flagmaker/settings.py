@@ -11,7 +11,6 @@ from .sanity import Validator
 from .building_blocks import Value
 from .building_blocks import ValueType
 
-
 class SettingOption(SettingOptionInterface):
     settings: SettingsInterface = None
     default = None
