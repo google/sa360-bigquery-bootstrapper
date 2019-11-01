@@ -20,8 +20,9 @@ class Bootstrap:
     def exec(self, args):
         self.settings: AbstractSettings = self.config.get()
         client = bigquery.Client()
-        val = str(self.settings['raw_dataset'])
-        dataset = Dataset(val)
+        dataset = str(self.settings['raw_dataset'])
+        project = str(self.settings['gcp_project_name'])
+        dataset = Dataset.from_string('{0}.{1}'.format(project, dataset))
         print(self.settings)
         result = client.create_dataset(dataset)
         print(result)
