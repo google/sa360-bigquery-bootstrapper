@@ -15,6 +15,7 @@ class AppSettings(AbstractSettings):
     Add all flags under settings()
     """
     def settings(self) -> dict:
+        hooks = Hooks()
         args = {
             'gcp_project_name': SettingOption.create('GCP Project Name'),
             'raw_dataset': SettingOption.create(
@@ -42,7 +43,7 @@ class AppSettings(AbstractSettings):
                 self,
                 'Storage Bucket Name',
                 prompt=Hooks.bucket_options,
-                after=Hooks.create_bucket,
+                after=hooks.create_bucket,
             ),
             'historical_table_name': SettingOption.create(
                 self,
@@ -58,9 +59,15 @@ class Hooks:
 
     Includes validation hooks, after hooks, and more.
     """
-    @staticmethod
-    def create_bucket(setting: SettingOption) -> bool:
+
+    def __init__(self):
+        self.valid_bucket = False
+
+    def create_bucket(self, setting: SettingOption) -> bool:
+        if self.valid_bucket:
+            return True
         settings = setting.settings
+
         class ChooseAnother:
             toggle = False
         while True:
@@ -70,6 +77,7 @@ class Hooks:
                 val = int(setting.value)
                 if val <= len(setting.custom_data['buckets']):
                     setting.value = setting.custom_data['buckets'][val - 1].name
+                    self.valid_bucket = True
                     return True
                 else:
                     cprint('Invalid selection', 'red', attrs=['bold'])
