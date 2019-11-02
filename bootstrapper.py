@@ -65,5 +65,7 @@ class Bootstrap:
         config['schedule'] = 'every day 00:00'
         config['params'] = params
         config['disabled'] = False
+        print(client.list_transfer_configs(parent))
+        return
         client.create_transfer_config(parent, config)
         cprint('Created schedule', 'cyan', attrs=['bold'])
