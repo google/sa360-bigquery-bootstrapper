@@ -14,7 +14,7 @@ Enable the following APIs
 
 - [Search Ads 360](https://console.cloud.google.com/apis/library/doubleclicksearch.googleapis.com?project={{project}})
 - [Cloud Storage](https://console.cloud.google.com/apis/library/storage-component.googleapis.com?project={{project}})
-- [Cloud Ads](https://console.cloud.google.com/apis/library/bigquery-json.googleapis.com?project={{project}})
+- [BigQuery](https://console.cloud.google.com/apis/library/bigquery-json.googleapis.com?project={{project}})
 
 
 ## Set project ID
