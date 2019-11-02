@@ -9,7 +9,8 @@ Select an existing Google Cloud project or create a new one.
 
 ### Enable APIs
 
-<walkthrough-enable-apis apis="bigquery,storage"></walkthrough-enable-apis>
+<walkthrough-enable-apis apis="doubleclick.googleapis.com,bigquery.googleapis.com,storage.googleapis.com">
+</walkthrough-enable-apis>
 
 ## Set project ID
 

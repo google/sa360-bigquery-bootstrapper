@@ -1,3 +1,5 @@
+from enum import Enum
+
 from absl import app
 from google.api_core.exceptions import Conflict
 from google.api_core.exceptions import InvalidArgument
@@ -54,18 +56,41 @@ class Bootstrap:
         parent = client.location_path(project, self.settings['location'])
         config = {}
         params = Struct()
+        display_name= 'SA360 Transfer {}'.format(advertiser)
+        config = Bootstrap.config_exists(parent, display_name)
+        if config is not None:
+            cprint(
+                'Schedule already exists for {}. Skipping'.format(advertiser),
+                'cyan'
+            )
+            return config
         params['agency_id'] = self.settings['agency_id'].value
         params['advertiser_id'] = advertiser
         params['include_removed_entities'] = False
-        config['display_name'] = 'SA360 Transfer {}'.format(
-            advertiser
+        config = {
+            'destination_dataset_id': Datasets.raw.dataset_id,
+            'data_source_id': SystemSettings.SERVICE_NAME,
+            'schedule': 'every day 00:00',
+            'params': params,
+            'disabled': False,
+        }
+        cprint(
+            'Created schedule for {}'.format(advertiser),
+            'cyan',
+            attrs=['bold']
         )
-        config['destination_dataset_id'] = Dataset.raw.dataset_id
-        config['data_source_id'] = 'doubleclick_search'
-        config['schedule'] = 'every day 00:00'
-        config['params'] = params
-        config['disabled'] = False
-        print(client.list_transfer_configs(parent))
-        return
-        client.create_transfer_config(parent, config)
-        cprint('Created schedule', 'cyan', attrs=['bold'])
+        return client.create_transfer_config(parent, config)
+
+    @staticmethod
+    def config_exists(parent, display_name):
+        configs = {
+            l.display_name: l
+            for l in client.list_transfer_configs(parent)
+            if l.data_source_id == SystemSettings.SERVICE_NAME
+        }
+        if display_name in configs:
+            return configs[display_name]
+
+
+class SystemSettings(Enum):
+    SERVICE_NAME = 'doubleclick_search'
