@@ -17,13 +17,6 @@ class AppSettings(AbstractSettings):
 
     def settings(self) -> dict:
         args = {
-            'interactive': SettingOption.create(
-                self,
-                'Interactive Mode',
-                default=False,
-                include_in_interactive=False,
-                method=flags.DEFINE_bool,
-            ),
             'gcp_project_name': SettingOption.create(
                 self,
                 'GCP Project Name'

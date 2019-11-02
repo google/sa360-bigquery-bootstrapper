@@ -60,8 +60,22 @@ class AbstractSettings(SettingsInterface):
     def __getitem__(self, item):
         return self.args[item]
 
+    def get_settings(self):
+        settings = self.settings()
+        # system settings
+        settings += {
+            'interactive': SettingOption.create(
+                self,
+                'Interactive Mode',
+                default=False,
+                include_in_interactive=False,
+                method=flags.DEFINE_bool,
+            ),
+        }
+        return settings
+
     def install(self):
-        self.args = self.settings()
+        self.args = self.get_settings()
         self.assign_flags()
 
     def __repr__(self):
