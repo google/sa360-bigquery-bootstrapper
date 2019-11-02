@@ -17,9 +17,6 @@ Enable the following APIs
 - [Cloud Ads](https://console.cloud.google.com/apis/library/bigquery-json.googleapis.com?project={{project}})
 
 
-<walkthrough-enable-apis apis="doubleclick.googleapis.com,bigquery.googleapis.com,storage.googleapis.com">
-</walkthrough-enable-apis>
-
 ## Set project ID
 
 Run the following command:
