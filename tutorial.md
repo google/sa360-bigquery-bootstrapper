@@ -5,9 +5,17 @@
 
 Select an existing Google Cloud project or create a new one.
 
-<walkthrough-project-setup>Setup</walkthrough-project-setup>
+<walkthrough-project-billing-setup key="project-id">
+</walkthrough-project-billing-setup>
 
 ### Enable APIs
+
+Enable the following APIs
+
+- [Search Ads 360](https://console.cloud.google.com/apis/library/doubleclicksearch.googleapis.com?project={{project}})
+- [Cloud Storage](https://console.cloud.google.com/apis/library/storage-component.googleapis.com?project={{project}})
+- [Cloud Ads](https://console.cloud.google.com/apis/library/bigquery-json.googleapis.com?project={{project}})
+
 
 <walkthrough-enable-apis apis="doubleclick.googleapis.com,bigquery.googleapis.com,storage.googleapis.com">
 </walkthrough-enable-apis>

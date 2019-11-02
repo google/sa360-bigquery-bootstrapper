@@ -1,6 +1,7 @@
 from enum import Enum
 
 from absl import app
+from google.api_core.exceptions import BadRequest
 from google.api_core.exceptions import Conflict
 from google.api_core.exceptions import InvalidArgument
 from google.api_core.exceptions import NotFound
@@ -14,6 +15,7 @@ import app_flags
 from flagmaker import AbstractSettings
 from flagmaker import Config
 from google.cloud.bigquery.dataset import Dataset
+
 
 class Datasets:
     raw: bigquery.dataset.Dataset = None
@@ -31,24 +33,35 @@ class Bootstrap:
         app.run(self.exec)
 
     def exec(self, args):
-        self.settings: AbstractSettings = self.config.get()
-        project = str(self.settings['gcp_project_name'])
-        client = bigquery.Client(project=project, location='US')  # type : bigquery.Client
-        for advertiser in self.settings['advertiser_id']:
-            cprint('Advertiser ID: {}'.format(advertiser),
-                   'blue', attrs=['bold', 'underline'])
-            self.load_datasets(client, project)
-            self.load_transfers(client, project, advertiser)
+        try:
+            self.settings: AbstractSettings = self.config.get()
+            project = str(self.settings['gcp_project_name'])
+            client = bigquery.Client(
+                project=project, location='US'
+            )  # type : bigquery.Client
+            for advertiser in self.settings['advertiser_id']:
+                cprint('Advertiser ID: {}'.format(advertiser),
+                       'blue', attrs=['bold', 'underline'])
+                self.load_datasets(client, project)
+                self.load_transfers(client, project, advertiser)
+        except BadRequest as err:
+            cprint(
+                'Error. Please ensure you have enabled all requested '
+                'APIs and try again.',
+                'red',
+                attrs=['bold']
+            )
+            cprint(err.message, 'red')
 
     def load_datasets(self, client, project):
         for k, v in (('raw', 'raw_dataset'), ('views', 'view_dataset')):
             dataset = str(self.settings[v])
             dataset = Dataset.from_string('{0}.{1}'.format(project, dataset))
             try:
-                setattr(Dataset, k, client.get_dataset(dataset))
+                setattr(Datasets, k, client.get_dataset(dataset))
                 cprint('Already have dataset {}'.format(dataset), 'green')
             except NotFound:
-                setattr(Dataset, k, client.create_dataset(dataset))
+                setattr(Datasets, k, client.create_dataset(dataset))
                 cprint('Created dataset {}'.format(dataset), 'green')
 
     def load_transfers(self, cli: bigquery.Client, project, advertiser):
@@ -57,7 +70,7 @@ class Bootstrap:
         config = {}
         params = Struct()
         display_name= 'SA360 Transfer {}'.format(advertiser)
-        config = Bootstrap.config_exists(parent, display_name)
+        config = Bootstrap.config_exists(client, parent, display_name)
         if config is not None:
             cprint(
                 'Schedule already exists for {}. Skipping'.format(advertiser),
@@ -68,21 +81,24 @@ class Bootstrap:
         params['advertiser_id'] = advertiser
         params['include_removed_entities'] = False
         config = {
+            'display_name': display_name,
             'destination_dataset_id': Datasets.raw.dataset_id,
             'data_source_id': SystemSettings.SERVICE_NAME,
             'schedule': 'every day 00:00',
             'params': params,
             'disabled': False,
         }
+        result = client.create_transfer_config(parent, config)
+        print(result)
         cprint(
             'Created schedule for {}'.format(advertiser),
             'cyan',
             attrs=['bold']
         )
-        return client.create_transfer_config(parent, config)
+        return result
 
     @staticmethod
-    def config_exists(parent, display_name):
+    def config_exists(client, parent, display_name):
         configs = {
             l.display_name: l
             for l in client.list_transfer_configs(parent)
@@ -92,5 +108,5 @@ class Bootstrap:
             return configs[display_name]
 
 
-class SystemSettings(Enum):
+class SystemSettings(object):
     SERVICE_NAME = 'doubleclick_search'
