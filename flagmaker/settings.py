@@ -24,6 +24,7 @@ class SettingOption(SettingOptionInterface):
     after: callable = None
     prompt: callable or str = None
     custom_data: StringKeyDict = {}
+    include_in_interactive: bool = True
     called: dict = {}
     __error: bool = False
 
@@ -33,7 +34,8 @@ class SettingOption(SettingOptionInterface):
     @classmethod
     def create(cls, settings: SettingsInterface, helptext=None, default=None,
                method=flags.DEFINE_string, required=True, validation=None,
-               show=None, after=None, prompt=None):
+               show=None, after=None, prompt=None,
+               include_in_interactive=True):
         fl = cls()
         fl.settings = settings
         fl.default = default
@@ -44,6 +46,7 @@ class SettingOption(SettingOptionInterface):
         fl.show = show
         fl.after = after
         fl.prompt = prompt
+        fl.include_in_interactive = include_in_interactive
         return fl
 
     def get_prompt(self, k):

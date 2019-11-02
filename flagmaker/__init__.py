@@ -33,18 +33,28 @@ class AbstractSettings(SettingsInterface):
     def load_settings(self):
         self.start()
         first = True
+        interactive_mode = self.args.pop('interactive')
         for k in self.args.keys():
             setting: SettingOption = self.args[k]
             if setting.maybe_needs_input():
+                if not interactive_mode and setting.default:
+                    setting._value.set_val(setting.default)
+                    continue
                 if first:
                     cprint('Interactive Setup', attrs=['bold'])
                     first = False
-                setting.set_value(prompt=setting.get_prompt(k))
+                if setting.include_in_interactive and interactive_mode:
+                    setting.set_value(prompt=setting.get_prompt(k))
         return self
 
     def assign_flags(self) -> flags:
         for k in self.args:
-            self.args[k].method(k, None, self.args[k].help)
+            kwargs = {
+                'default': None,
+            }
+            if not self.args[k].include_in_interactive:
+                kwargs['default'] = self.args[k].default
+            self.args[k].method(k, help=self.args[k].help, **kwargs)
         return FLAGS
 
     def __getitem__(self, item):

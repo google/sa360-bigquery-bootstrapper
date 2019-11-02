@@ -17,7 +17,17 @@ class AppSettings(AbstractSettings):
 
     def settings(self) -> dict:
         args = {
-            'gcp_project_name': SettingOption.create('GCP Project Name'),
+            'interactive': SettingOption.create(
+                self,
+                'Interactive Mode',
+                default=False,
+                include_in_interactive=False,
+                method=flags.DEFINE_bool,
+            ),
+            'gcp_project_name': SettingOption.create(
+                self,
+                'GCP Project Name'
+            ),
             'raw_dataset': SettingOption.create(
                 self,
                 'Dataset where raw data will be stored',
@@ -27,6 +37,11 @@ class AppSettings(AbstractSettings):
                 self,
                 'Dataset where view data will be generated and stored',
                 default='views'
+            ),
+            'location': SettingOption.create(
+                self,
+                'Cloud Location (2 letter country code)',
+                default='US'
             ),
             'agency_id': SettingOption.create(self, 'SA360 Agency ID'),
             'advertiser_id': SettingOption.create(
