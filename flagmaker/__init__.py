@@ -1,5 +1,7 @@
 from abc import ABC
 from abc import abstractmethod
+from collections import OrderedDict
+
 from absl import flags
 from termcolor import cprint
 from typing import ClassVar
@@ -61,9 +63,9 @@ class AbstractSettings(SettingsInterface):
         return self.args[item]
 
     def get_settings(self):
-        settings = self.settings()
+        settings = OrderedDict(self.settings())
         # system settings
-        settings += {
+        settings.update({
             'interactive': SettingOption.create(
                 self,
                 'Interactive Mode',
@@ -71,7 +73,7 @@ class AbstractSettings(SettingsInterface):
                 include_in_interactive=False,
                 method=flags.DEFINE_bool,
             ),
-        }
+        })
         return settings
 
     def install(self):

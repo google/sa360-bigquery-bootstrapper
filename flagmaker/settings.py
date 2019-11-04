@@ -9,7 +9,6 @@ from flagmaker.hints import StringKeyDict
 from .exceptions import FlagMakerInputError
 from .sanity import Validator
 from .building_blocks import Value
-from .building_blocks import ValueType
 
 
 class SettingOption(SettingOptionInterface):
@@ -95,7 +94,7 @@ class SettingOption(SettingOptionInterface):
             if init is None:
                 return
             elif init != '':
-                self._value.set_val(init)
+                self.value = init
                 return
 
             if prompt != '':
