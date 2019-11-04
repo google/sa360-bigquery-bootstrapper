@@ -93,6 +93,7 @@ class Hooks:
     def create_bucket(self, setting: SettingOption) -> bool:
         class ChooseAnother:
             toggle = False
+        settings = setting.settings
 
         while True:
             if 'buckets' not in setting.custom_data:
