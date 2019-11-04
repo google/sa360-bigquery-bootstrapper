@@ -77,6 +77,9 @@ class AppSettings(AbstractSettings):
 class LastChoice:
     file_choice: None
 
+    def __init__(self):
+        self.file_choice = None
+
 
 class Hooks:
     """Convenience class to add all hooks
