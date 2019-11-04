@@ -99,7 +99,6 @@ class Bootstrap:
         )
         return result
 
-
     @staticmethod
     def config_exists(client, parent, display_name):
         configs = {
