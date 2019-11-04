@@ -172,7 +172,7 @@ class Hooks:
 
     def handle_csv_paths(self, setting: SettingOption):
         choice = setting.value
-        if choice is list:
+        if isinstance(choice, list):
             for option in choice:
                 if option != '':
                     self.ensure_utf8(setting, option)
