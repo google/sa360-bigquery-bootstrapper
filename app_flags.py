@@ -2,7 +2,6 @@ from absl import flags
 from google.api_core import exceptions
 from google.api_core.exceptions import NotFound
 from google.cloud import storage
-from google.cloud import b
 from termcolor import cprint
 import os
 
@@ -177,7 +176,7 @@ class Hooks:
                 continue
             results = []
             for advertiser in advertisers:
-                results.append(input('Advertiser {}: '.format(advertiser)))
+                results.append(input('Advertiser #{}: '.format(advertiser)))
             return ','.join(results)
 
     def ensure_utf8(self, setting: SettingOption):
