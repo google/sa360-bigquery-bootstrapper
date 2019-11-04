@@ -40,7 +40,7 @@ class AbstractSettings(SettingsInterface):
             setting: SettingOption = self.args[k]
             if setting.maybe_needs_input():
                 if not interactive_mode and setting.default:
-                    print(setting, setting.default)
+                    setting.set_value(init=setting.default)
                     continue
                 if first:
                     cprint('Interactive Setup', attrs=['bold'])

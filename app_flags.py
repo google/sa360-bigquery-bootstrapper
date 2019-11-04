@@ -1,5 +1,6 @@
 from absl import flags
 from google.api_core import exceptions
+from google.api_core.exceptions import NotFound
 from google.cloud import storage
 from termcolor import cprint
 import os
@@ -159,7 +160,15 @@ class Hooks:
         settings = setting.settings
         filename = setting.value
         bucket_name = settings['storage_bucket'].value
-        bucket = self.storage.get_bucket(settings['storage_bucket'].value)
+        try:
+            bucket = self.storage.get_bucket(bucket_name)
+        except NotFound:
+            cprint('Could not find bucket named ' + bucket_name, 'red',
+                   attrs=['bold'])
+            cprint('Please double-check existence, or remove the flag '
+                   'so we can help you create the storage bucket '
+                   'interactively.', 'red')
+            exit(1)
         local = False
         if filename.startswith('gs://'):
             filename = filename.replace('gs://{}/'.format(bucket_name), '')
@@ -171,7 +180,7 @@ class Hooks:
             local = True
 
         def try_decode(fname, encoding):
-            with open('/tmp/' + fname, 'rb') as fh:
+            with open(fname, 'rb') as fh:
                 if encoding == 'utf-8':
                     file_data = fh.read()
                     file_data.decode(encoding)
@@ -185,7 +194,7 @@ class Hooks:
             if local:
                 full_filename = '{}/{}'.format(os.environ['HOME'], filename)
             else:
-                full_filename = filename
+                full_filename = '/tmp/{}'.format(filename)
             try:
                 contents = try_decode(full_filename, encoding)
                 with open('/tmp/' + filename, 'w+b') as fh:
