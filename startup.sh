@@ -1,10 +1,12 @@
-pip3 install pipenv --user
-gcloud config set project $1
+[[ -z $(which pipenv) ]] && pip3 install pipenv --user
+[[ -n $1 && $(gcloud config get-value project) != $1 ]] && gcloud config set project $1 && echo "Project set"
+
 gcloud services enable doubleclicksearch.googleapis.com
 gcloud services enable storage-component.googleapis.com
 gcloud services enable bigquery-json.googleapis.com
 gcloud services enable bigquerystorage.googleapis.com
-if [[ $(grep -c "$HOME/.local/bin" <(echo $PATH)) == 0 ]]
+cmd="PATH=\$PATH:$HOME/.local/bin"
+if [[ $(grep -c "$cmd" $HOME/.bashrc) == 0 ]]
 then
     echo "PATH=\$PATH:$HOME/.local/bin" >> $HOME/.bashrc
     source ~/.bashrc
