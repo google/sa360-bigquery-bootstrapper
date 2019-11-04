@@ -47,7 +47,7 @@ and wait ~10 minutes to allow your project to be enabled.
 Now we will run the deploy script. It will be interactive, so be sure to follow the prompts below.
 
 ```bash
-pipenv run python run.py --gcp_project_name={{project-id}}
+pipenv run python run.py --gcp_project_name={{project-id}} --interactive
 ```
 
 You can copy the above command into the interactive shell below (or click on the **>** icon and then press enter below)

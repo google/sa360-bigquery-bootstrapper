@@ -68,7 +68,6 @@ class AppSettings(AbstractSettings):
                 'Otherwise, drag and drop the file here '
                 'and just specify the file name.\n'
                 'File Location',
-                show=lambda: args['has_historical_data'].value,
                 after=self.hooks.ensure_utf8
             )
         }

@@ -40,12 +40,12 @@ class AbstractSettings(SettingsInterface):
             setting: SettingOption = self.args[k]
             if setting.maybe_needs_input():
                 if not interactive_mode and setting.default:
-                    setting._value.set_val(setting.default)
+                    print(setting, setting.default)
                     continue
                 if first:
                     cprint('Interactive Setup', attrs=['bold'])
                     first = False
-                if setting.include_in_interactive and interactive_mode:
+                if setting.include_in_interactive:
                     setting.set_value(prompt=setting.get_prompt(k))
         return self
 
@@ -68,7 +68,7 @@ class AbstractSettings(SettingsInterface):
         settings.update({
             'interactive': SettingOption.create(
                 self,
-                'Interactive Mode',
+                'Enter Interactive Mode even to verify default values',
                 default=False,
                 include_in_interactive=False,
                 method=flags.DEFINE_bool,
