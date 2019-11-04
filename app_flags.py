@@ -65,11 +65,7 @@ class AppSettings(AbstractSettings):
             ),
             'file_path': SettingOption.create(
                 self,
-                'Provide your CSV file path. \n'
-                'If in storage, provide a full URL starting with gs://. '
-                'Otherwise, drag and drop the file here '
-                'and just specify the file name.\n'
-                'File Location',
+                'Historical Data CSV File Path',
                 after=self.hooks.ensure_utf8,
                 method=flags.DEFINE_list,
                 prompt=self.hooks.get_file_paths,
@@ -161,6 +157,10 @@ class Hooks:
     def get_file_paths(self, setting: SettingOption):
         settings = setting.settings
         advertisers = settings['advertiser_id'].value
+
+        cprint('If in storage, provide a full URL starting with gs://. '
+               'Otherwise, drag and drop the file here '
+               'and just specify the file name.\n', 'cyan')
 
         while True:
             option = input('Do you want to:\n'
