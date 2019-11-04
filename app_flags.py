@@ -74,13 +74,6 @@ class AppSettings(AbstractSettings):
         return args
 
 
-class LastChoice:
-    file_choice: None
-
-    def __init__(self):
-        self.file_choice = None
-
-
 class Hooks:
     """Convenience class to add all hooks
 
@@ -89,7 +82,6 @@ class Hooks:
 
     def __init__(self):
         self.storage = None
-        self.last_choice = LastChoice()
 
     def set_clients(self, setting: SettingOption):
         settings = setting.settings
@@ -180,16 +172,11 @@ class Hooks:
 
     def handle_csv_paths(self, setting: SettingOption):
         choice = setting.value
-        if self.last_choice.file_choice == choice:
-            choice = None
-        self.last_choice.file_choice = setting.value
-
         if choice is list:
             for option in choice:
                 if option != '':
                     self.ensure_utf8(setting, option)
             return True
-
         advertisers = setting.settings['advertiser_id'].value
         options = []
         if not choice.isnumeric():
@@ -206,6 +193,7 @@ class Hooks:
                 break
             elif choice != '2':
                 cprint('Invalid option', 'red', attrs=['bold'])
+                setting.value = None
                 return False
             for advertiser in advertisers:
                 options.append(input('Advertiser #{}: '.format(advertiser)))
