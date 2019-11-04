@@ -66,7 +66,7 @@ class AppSettings(AbstractSettings):
             'file_path': SettingOption.create(
                 self,
                 'Historical Data CSV File Path',
-                after=self.hooks.ensure_utf8,
+                after=self.hooks.handle_csv_paths,
                 method=flags.DEFINE_list,
                 prompt=self.hooks.get_file_paths,
             )
@@ -163,30 +163,39 @@ class Hooks:
                'Otherwise, drag and drop the file here '
                'and just specify the file name.\n', 'cyan')
 
-        while True:
-            option = input('Do you want to:\n'
-                           '1. Enter comma separated values to map'
-                           ' each advertiser ID\n'
-                           '2. Enter each value separately?\n'
-                           'Option: ')
-            if option == '1':
-                return input('Add comma-separated file '
-                             'locations (leave blank if none)\n'
-                             '{}'.format(','.join(advertisers)))
-            elif option != '2':
-                cprint('Invalid option', 'red', attrs=['bold'])
-                continue
-            results = []
-            for advertiser in advertisers:
-                results.append(input('Advertiser #{}: '.format(advertiser)))
-            return ','.join(results)
+        return 'Do you want to:\n'
+                       '1. Enter comma separated values to map'
+                       ' each advertiser ID\n'
+                       '2. Enter each value separately?\n'
 
-    def ensure_utf8(self, setting: SettingOption):
+    def handle_csv_paths(self, setting: SettingOption):
+        choice = setting.value
+        advertisers = setting.settings['advertiser_id']
+        options = []
+        if not choice.isnumeric():
+            options = choice.split(',')
+
+        while True:
+            if choice == '1':
+                options = input('Add comma-separated file '
+                'locations (leave blank if none)\n'
+                '{}'.format(','.join(advertisers))).split(',')
+                break
+            elif choice != '2':
+                cprint('Invalid option', 'red', attrs=['bold'])
+                choice = input('Select Option (1 or 2): ')
+            for advertiser in advertisers:
+                options.append(input('Advertiser #{}: '.format(advertiser)))
+            break
+
+        setting.value = options
+        for option in options:
+            self.ensure_utf8(setting, option)
+
+    def ensure_utf8(self, setting: SettingOption, filename: str):
         settings = setting.settings
-        print(setting.value); exit(1)
-        settings = setting.settings
-        filename = setting.value
         bucket_name = settings['storage_bucket'].value
+        bucket = None
         try:
             bucket = self.storage.get_bucket(bucket_name)
         except NotFound:
