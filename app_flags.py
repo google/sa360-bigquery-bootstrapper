@@ -94,8 +94,6 @@ class Hooks:
         )
 
     def create_bucket(self, setting: SettingOption) -> bool:
-        settings = setting.settings
-
         class ChooseAnother:
             toggle = False
 
@@ -160,6 +158,8 @@ class Hooks:
         return result
 
     def ensure_utf8(self, setting: SettingOption):
+        settings = setting.settings
+        print(setting.value); exit(1)
         settings = setting.settings
         filename = setting.value
         bucket_name = settings['storage_bucket'].value
