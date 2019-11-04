@@ -78,7 +78,8 @@ class SettingOption(SettingOptionInterface):
             value = int(value)
         self._value.set_val(value)
         # perform actions
-        if self.after is not None and self.after not in self.called:
+        in_called = self.after is not None and self.after not in self.called
+        if in_called or self._error:
             self.called[self.after] = True
             self._error = not self.after(self)
         else:
@@ -108,7 +109,7 @@ class SettingOption(SettingOptionInterface):
                     continue
             else:
                 self.value = value
-
+            print(self._error)
             if not Validator.validate(self) or self._error:
                 continue
             if self.value_explicitly_set() or not self.required:
