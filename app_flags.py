@@ -166,12 +166,13 @@ class Hooks:
             option = input('Do you want to:\n'
                            '1. Enter comma separated values to map'
                            ' each advertiser ID\n'
-                           '2. Enter each value separately?')
-            if option == 1:
+                           '2. Enter each value separately?\n'
+                           'Option: ')
+            if option == '1':
                 return input('Add comma-separated file '
                              'locations (leave blank if none)\n'
                              '{}'.format(','.join(advertisers)))
-            elif option != 2:
+            elif option != '2':
                 cprint('Invalid option', 'red', attrs=['bold'])
                 continue
             results = []
