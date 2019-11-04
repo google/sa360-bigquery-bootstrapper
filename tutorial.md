@@ -27,7 +27,7 @@ Run the following command:
 If you run this command more than once, nothing bad will happen, 
 but you should only have to run it one time.
     
-    bash setup_env.sh
+    bash startup.sh
     
 ## Run deploy script
 
