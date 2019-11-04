@@ -163,7 +163,7 @@ class Hooks:
                'Otherwise, drag and drop the file(s) here '
                'and just specify the file name(s).\n'
                'You can leave any value without historical data'
-               'blank.', 'purple')
+               'blank.', 'blue')
 
         return ('Do you want to:\n'
                 '1. Enter comma separated values to map'
