@@ -8,14 +8,14 @@ Select an existing Google Cloud project or create a new one.
 <walkthrough-project-billing-setup key="project-id">
 </walkthrough-project-billing-setup>
 
-### Enable APIs
+## Enable APIs
 
 Enable the following APIs
 
-- [Search Ads 360](https://console.cloud.google.com/apis/library/doubleclicksearch.googleapis.com?project={{project}})
-- [Cloud Storage](https://console.cloud.google.com/apis/library/storage-component.googleapis.com?project={{project}})
-- [BigQuery](https://console.cloud.google.com/apis/library/bigquery-json.googleapis.com?project={{project}})
-- [BigQuery Storage](https://console.cloud.google.com/apis/library/bigquerystorage.googleapis.com?project={{project}})
+- [Search Ads 360](https://console.cloud.google.com/apis/library/doubleclicksearch.googleapis.com?project={{project-id}})
+- [Cloud Storage](https://console.cloud.google.com/apis/library/storage-component.googleapis.com?project={{project-id}})
+- [BigQuery](https://console.cloud.google.com/apis/library/bigquery-json.googleapis.com?project={{project-id}})
+- [BigQuery Storage](https://console.cloud.google.com/apis/library/bigquerystorage.googleapis.com?project={{project-id}})
 
 ## Set project ID
 
@@ -27,10 +27,7 @@ Run the following command:
 If you run this command more than once, nothing bad will happen, 
 but you should only have to run it one time.
     
-    pip3 install pipenv --user
-    [[ $(grep -c "$HOME/.local/bin" <(echo $PATH)) == 0 ]] \
-    && echo "PATH=\$PATH:$HOME/.local/bin" >> $HOME/.bashrc \
-    && source ~/.bashrc
+    bash setup_env.sh
     
 ## Run deploy script
 

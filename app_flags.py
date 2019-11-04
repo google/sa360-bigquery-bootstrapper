@@ -165,9 +165,9 @@ class Hooks:
         except NotFound:
             cprint('Could not find bucket named ' + bucket_name, 'red',
                    attrs=['bold'])
-            cprint('Please double-check existence, or remove the flag '
-                   'so we can help you create the storage bucket '
-                   'interactively.', 'red')
+            cprint('Please double-check existence, or remove the '
+                   'storage_bucket flag so we can help you create the storage '
+                   'bucket interactively.', 'red')
             exit(1)
         local = False
         if filename.startswith('gs://'):
