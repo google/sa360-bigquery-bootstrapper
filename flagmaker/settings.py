@@ -25,7 +25,7 @@ class SettingOption(SettingOptionInterface):
     custom_data: StringKeyDict = {}
     include_in_interactive: bool = True
     called: dict = {}
-    __error: bool = False
+    _error: bool = False
 
     def __init__(self):
         self._value = Value()
@@ -80,9 +80,9 @@ class SettingOption(SettingOptionInterface):
         # perform actions
         if self.after is not None and self.after not in self.called:
             self.called[self.after] = True
-            self.__error = not self.after(self)
+            self._error = not self.after(self)
         else:
-            self.__error = False
+            self._error = False
 
     def set_value(self, value: str = '', prompt: str = '', init: str = ''):
         while True:
@@ -103,13 +103,13 @@ class SettingOption(SettingOptionInterface):
                     self.value = self.default
                 else:
                     self.value = val
-                if self.__error:
+                if self._error:
                     self.value = None
                     continue
             else:
                 self.value = value
 
-            if not Validator.validate(self):
+            if not Validator.validate(self) or self._error:
                 continue
             if self.value_explicitly_set() or not self.required:
                 return
