@@ -200,19 +200,22 @@ class Hooks:
             return False
 
         file_map = {}
+        results = []
         for i in range(len(advertisers)):
-            filename = options[i] if i < len(options) else None
-            results = '{}: {}'.format(
+            filename = options[i] if i < len(options) else '-'
+            results.append('{}:   {}'.format(
                 advertisers[i],
                 filename,
-            )
+            ))
             file_map[advertisers[i]] = filename
-            while True:
-                result = input('Confirm Map:\n {}\nCorrect? [y/n]: '.format(i))
-                if result == 'y':
-                    break
-                if result == 'n':
-                    return False
+        while True:
+            result = input(
+                'Confirm Map:\n{}\nCorrect? [y/n]: '.format('\n'.join(results))
+            )
+            if result == 'y':
+                break
+            if result == 'n':
+                return False
         setting.settings.custom['file_map'] = file_map
         setting.value = options
         for option in options:
