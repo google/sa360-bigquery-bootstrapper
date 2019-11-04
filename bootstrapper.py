@@ -92,7 +92,6 @@ class Bootstrap:
             'disabled': False,
         }
         result = client.create_transfer_config(parent, config)
-        print(result)
         cprint(
             'Created schedule for {}'.format(advertiser),
             'cyan',
