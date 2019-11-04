@@ -60,6 +60,7 @@ class AppSettings(AbstractSettings):
             'historical_table_name': SettingOption.create(
                 self,
                 'Name of historical table (suffix will be advertiser ID)',
+                default='historical',
                 show=lambda: args['has_historical_data'].value,
             ),
             'file_path': SettingOption.create(
@@ -87,6 +88,7 @@ class Hooks:
 
     def set_clients(self, setting: SettingOption):
         settings = setting.settings
+        print(settings['gcp_project_name'].value)
         self.storage = storage.Client(
             project=settings['gcp_project_name'].value
         )
