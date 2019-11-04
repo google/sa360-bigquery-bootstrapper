@@ -163,10 +163,10 @@ class Hooks:
                'Otherwise, drag and drop the file here '
                'and just specify the file name.\n', 'cyan')
 
-        return 'Do you want to:\n'
-                       '1. Enter comma separated values to map'
-                       ' each advertiser ID\n'
-                       '2. Enter each value separately?\n'
+        return ('Do you want to:\n'
+                '1. Enter comma separated values to map'
+                ' each advertiser ID\n'
+                '2. Enter each value separately?\n')
 
     def handle_csv_paths(self, setting: SettingOption):
         choice = setting.value
