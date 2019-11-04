@@ -9,9 +9,7 @@ from flagmaker.hints import StringKeyDict
 from .exceptions import FlagMakerInputError
 from .sanity import Validator
 from .building_blocks import Value
-from typing import Tuple
 
-Prompt = Tuple[str, list]
 
 class SettingOption(SettingOptionInterface):
     settings: SettingsInterface = None
@@ -27,7 +25,6 @@ class SettingOption(SettingOptionInterface):
     custom_data: StringKeyDict = {}
     include_in_interactive: bool = True
     called: dict = {}
-    mapto: callable = None
     __error: bool = False
 
     def __init__(self):
@@ -37,7 +34,7 @@ class SettingOption(SettingOptionInterface):
     def create(cls, settings: SettingsInterface, helptext=None, default=None,
                method=flags.DEFINE_string, required=True, validation=None,
                show=None, after=None, prompt=None,
-               include_in_interactive=True, mapto=None):
+               include_in_interactive=True):
         fl = cls()
         fl.settings = settings
         fl.default = default
@@ -49,14 +46,12 @@ class SettingOption(SettingOptionInterface):
         fl.after = after
         fl.prompt = prompt
         fl.include_in_interactive = include_in_interactive
-        fl.mapto = mapto
         return fl
 
-    def get_prompt(self, k, inside_map=False, mapval=None):
+    def get_prompt(self, k):
         default = ' [{0}]'.format(
             self.default
         ) if self.default is not None else ''
-        added_result = []
         prompt = ''
         if self.prompt is not None:
             prompt += '\n'
@@ -65,16 +60,7 @@ class SettingOption(SettingOptionInterface):
             if callable(self.prompt):
                 prompt += self.prompt(self)
             prompt += '\nInput'
-        result = '{0} ({1}){2}{3}{4}'.format(
-            self.help, k, default, prompt, ': ' if self.mapto is None else '\n'
-        )
-        if inside_map:
-            return mapval + ': '
-        elif self.mapto is not None and self.mapto is callable:
-            added_result = []
-            for item in self.mapto():
-                added_result.append(input(self.get_prompt(k, True, item)))
-        return result, added_result
+        return '{} ({}){}{}: '.format(self.help, k, default, prompt)
 
     @property
     def value(self):
@@ -98,11 +84,9 @@ class SettingOption(SettingOptionInterface):
         else:
             self.__error = False
 
-    def set_value(self, value: str = '', prompt: Prompt = None, init: str = ''):
+    def set_value(self, value: str = '', prompt: str = '', init: str = ''):
         while True:
-            num_opts = (int(value != '') +
-                        int(prompt is not None) +
-                        int(init != ''))
+            num_opts = int(value != '') + int(prompt != '') + int(init != '')
             if num_opts != 1:
                 raise FlagMakerInputError('Need to choose either '
                                           'init, value or prompt')
@@ -113,16 +97,8 @@ class SettingOption(SettingOptionInterface):
                 self.value = init
                 return
 
-            if prompt is not None:
-                p, e = prompt
-                val = ''
-                if len(e) > 0:
-                    cprint(p, None, attrs=['bold'])
-                    print('-------------------------')
-                    for i in e:
-                        val = input(i)
-                else:
-                    val = input(p)
+            if prompt != '':
+                val = input(prompt)
                 if val == '' and self.default is not None:
                     self.value = self.default
                 else:

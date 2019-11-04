@@ -2,6 +2,7 @@ from absl import flags
 from google.api_core import exceptions
 from google.api_core.exceptions import NotFound
 from google.cloud import storage
+from google.cloud import b
 from termcolor import cprint
 import os
 
@@ -71,7 +72,8 @@ class AppSettings(AbstractSettings):
                 'and just specify the file name.\n'
                 'File Location',
                 after=self.hooks.ensure_utf8,
-                mapto=lambda: args['advertiser_id'].value,
+                method=flags.DEFINE_list,
+                prompt=self.hooks.get_file_paths,
             )
         }
         return args
@@ -156,6 +158,27 @@ class Hooks:
                             for b in range(bucket_size)])
         result += '\nc: Create New Bucket'
         return result
+
+    def get_file_paths(self, setting: SettingOption):
+        settings = setting.settings
+        advertisers = settings['advertiser_id'].value
+
+        while True:
+            option = input('Do you want to:\n'
+                           '1. Enter comma separated values to map'
+                           ' each advertiser ID\n'
+                           '2. Enter each value separately?')
+            if option == 1:
+                return input('Add comma-separated file '
+                             'locations (leave blank if none)\n'
+                             '{}'.format(','.join(advertisers)))
+            elif option != 2:
+                cprint('Invalid option', 'red', attrs=['bold'])
+                continue
+            results = []
+            for advertiser in advertisers:
+                results.append(input('Advertiser {}: '.format(advertiser)))
+            return ','.join(results)
 
     def ensure_utf8(self, setting: SettingOption):
         settings = setting.settings
