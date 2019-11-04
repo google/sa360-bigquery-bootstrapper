@@ -68,6 +68,9 @@ class SettingOption(SettingOptionInterface):
 
     @value.setter
     def value(self, value):
+        if value is None:
+            self._value.set_val(None)
+            return
         if self.method == flags.DEFINE_boolean:
             if value == '1' or value == 'true':
                 value = True
