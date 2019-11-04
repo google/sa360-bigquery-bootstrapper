@@ -172,6 +172,12 @@ class Hooks:
 
     def handle_csv_paths(self, setting: SettingOption):
         choice = setting.value
+        if choice is list:
+            for option in choice:
+                if option != '':
+                    self.ensure_utf8(setting, option)
+            return True
+
         advertisers = setting.settings['advertiser_id'].value
         options = []
         if not choice.isnumeric():
@@ -218,9 +224,6 @@ class Hooks:
                 return False
         setting.settings.custom['file_map'] = file_map
         setting.value = options
-        for option in options:
-            if option != '':
-                self.ensure_utf8(setting, option)
         return True
 
     def ensure_utf8(self, setting: SettingOption, filename: str):
