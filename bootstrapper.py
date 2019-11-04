@@ -40,11 +40,13 @@ class Bootstrap:
             client = bigquery.Client(
                 project=project, location='US'
             )  # type : bigquery.Client
+            self.load_datasets(client, project)
             for advertiser in self.settings['advertiser_id']:
                 cprint('Advertiser ID: {}'.format(advertiser),
                        'blue', attrs=['bold', 'underline'])
-                self.load_datasets(client, project)
                 self.load_transfers(client, project, advertiser)
+                CreateViews(self.settings, client, project, advertiser).run()
+
         except BadRequest as err:
             cprint(
                 'Error. Please ensure you have enabled all requested '
@@ -113,4 +115,17 @@ class Bootstrap:
 class SystemSettings(object):
     SERVICE_NAME = 'doubleclick_search'
 
+class CreateViews:
+    client: bigquery.Client = None
+    project: str = None
+    advertiser: str = None
+    settings: AbstractSettings = None
 
+    def __init__(self, config, client, project, advertiser):
+        self.settings = config
+        self.client = client
+        self.project = project
+        self.advertiser = advertiser
+
+    def run(self):
+        pass

@@ -25,6 +25,7 @@ class SettingOption(SettingOptionInterface):
     custom_data: StringKeyDict = {}
     include_in_interactive: bool = True
     called: dict = {}
+    mapto: callable = None
     __error: bool = False
 
     def __init__(self):
@@ -34,7 +35,7 @@ class SettingOption(SettingOptionInterface):
     def create(cls, settings: SettingsInterface, helptext=None, default=None,
                method=flags.DEFINE_string, required=True, validation=None,
                show=None, after=None, prompt=None,
-               include_in_interactive=True):
+               include_in_interactive=True, mapto=None):
         fl = cls()
         fl.settings = settings
         fl.default = default
@@ -46,9 +47,10 @@ class SettingOption(SettingOptionInterface):
         fl.after = after
         fl.prompt = prompt
         fl.include_in_interactive = include_in_interactive
+        fl.mapto = mapto
         return fl
 
-    def get_prompt(self, k):
+    def get_prompt(self, k, inside_map=False, mapval=None):
         default = ' [{0}]'.format(
             self.default
         ) if self.default is not None else ''
@@ -60,7 +62,14 @@ class SettingOption(SettingOptionInterface):
             if callable(self.prompt):
                 prompt += self.prompt(self)
             prompt += '\nInput'
-        return '{} ({}){}{}: '.format(self.help, k, default, prompt)
+        if self.mapto is None or inside_map:
+            d = ' (' + mapval + ')' if inside_map else ''
+            return '{} ({}){}{}{}: '.format(self.help, k, default, prompt, d)
+        elif self.mapto is callable:
+            result = []
+            for item in self.mapto():
+                result.append(self.get_prompt(k, True, item))
+            return result
 
     @property
     def value(self):

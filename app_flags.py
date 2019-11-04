@@ -59,7 +59,7 @@ class AppSettings(AbstractSettings):
             ),
             'historical_table_name': SettingOption.create(
                 self,
-                'Name of historical table',
+                'Name of historical table (suffix will be advertiser ID)',
                 show=lambda: args['has_historical_data'].value,
             ),
             'file_path': SettingOption.create(
@@ -69,7 +69,8 @@ class AppSettings(AbstractSettings):
                 'Otherwise, drag and drop the file here '
                 'and just specify the file name.\n'
                 'File Location',
-                after=self.hooks.ensure_utf8
+                after=self.hooks.ensure_utf8,
+                mapto=lambda: args['advertiser_id'].value,
             )
         }
         return args
