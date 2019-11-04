@@ -172,7 +172,7 @@ class Hooks:
 
     def handle_csv_paths(self, setting: SettingOption):
         choice = setting.value
-        advertisers = setting.settings['advertiser_id']
+        advertisers = setting.settings['advertiser_id'].value
         options = []
         if not choice.isnumeric():
             options = choice.split(',')
