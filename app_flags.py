@@ -160,13 +160,15 @@ class Hooks:
         filename = setting.value
         bucket_name = settings['storage_bucket'].value
         bucket = self.storage.get_bucket(settings['storage_bucket'].value)
+        local = False
         if filename.startswith('gs://'):
             filename = filename.replace('gs://{}/'.format(bucket_name), '')
             file = bucket.blob(filename)
             with open('/tmp/' + filename, 'w+b') as fh:
                 file.download_to_file(fh, self.storage)
         else:
-            file = bucket.blob('{}/{}'.format(os.environ['HOME'], filename))
+            file = bucket.blob('{}'.format(filename))
+            local = True
 
         def try_decode(fname, encoding):
             with open('/tmp/' + fname, 'rb') as fh:
@@ -180,8 +182,12 @@ class Hooks:
                 return file_data
 
         for encoding in ['utf-8', 'utf-16', 'latin-1']:
+            if local:
+                full_filename = '{}/{}'.format(os.environ['HOME'], filename)
+            else:
+                full_filename = filename
             try:
-                contents = try_decode(filename, encoding)
+                contents = try_decode(full_filename, encoding)
                 with open('/tmp/' + filename, 'w+b') as fh:
                     fh.write(contents)
                     fh.seek(0)
