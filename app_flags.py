@@ -96,12 +96,12 @@ class Hooks:
         settings = setting.settings
 
         while True:
-            if 'buckets' not in setting.custom_data:
+            if 'buckets' not in settings.custom:
                 return True
             if setting.value.isnumeric():
                 val = int(setting.value)
-                if val <= len(setting.custom_data['buckets']):
-                    value = setting.custom_data['buckets'][val - 1].name
+                if val <= len(settings.custom['buckets']):
+                    value = settings.custom['buckets'][val - 1].name
                     setting.value = value
                     return True
                 else:
@@ -148,7 +148,7 @@ class Hooks:
 
     def bucket_options(self, setting: SettingOption):
         settings = setting.settings
-        buckets = setting.custom_data['buckets'] = list(self.storage.list_buckets())
+        buckets = settings.custom['buckets'] = list(self.storage.list_buckets())
         bucket_size = len(buckets)
         result = '\n'.join(['{}: {}'.format(b+1, buckets[b])
                             for b in range(bucket_size)])
@@ -199,17 +199,21 @@ class Hooks:
                    'than advertisers ({}).'.format(len(advertisers)))
             return False
 
+        file_map = {}
         for i in range(advertisers):
-            results = '{}:  {}'.format(
+            filename = options[i] if i < len(options) else None
+            results = '{}: {}'.format(
                 advertisers[i],
-                options[i] if i < len(options) else '--'
+                filename,
             )
+            file_map[advertisers[i]] = filename
             while True:
                 result = input('Confirm Map:\n {}\nCorrect? [y/n]: '.format(i))
                 if result == 'y':
                     break
                 if result == 'n':
                     return False
+        setting.settings.custom['file_map'] = file_map
         setting.value = options
         for option in options:
             if option != '':

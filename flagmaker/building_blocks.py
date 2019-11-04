@@ -76,6 +76,8 @@ class Value(object):
 
 
 class SettingsInterface(ABC):
+    custom = {}
+
     @abstractmethod
     def load_settings(self):
         pass
