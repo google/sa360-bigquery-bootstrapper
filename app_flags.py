@@ -160,8 +160,10 @@ class Hooks:
         advertisers = settings['advertiser_id'].value
 
         cprint('If in storage, provide a full URL starting with gs://. '
-               'Otherwise, drag and drop the file here '
-               'and just specify the file name.\n', 'cyan')
+               'Otherwise, drag and drop the file(s) here '
+               'and just specify the file name(s).\n'
+               'You can leave any value without historical data'
+               'blank.', 'purple')
 
         return ('Do you want to:\n'
                 '1. Enter comma separated values to map'
@@ -177,9 +179,12 @@ class Hooks:
 
         while True:
             if choice == '1':
-                options = input('Add comma-separated file '
-                'locations (leave blank if none)\n'
-                '{}'.format(','.join(advertisers))).split(',')
+                options = input(
+                    'Add comma-separated file '
+                    'locations\n'
+                    'IDs:    {}\n'
+                    'Values: '.format(','.join(advertisers))
+                ).split(',')
                 break
             elif choice != '2':
                 cprint('Invalid option', 'red', attrs=['bold'])
@@ -190,7 +195,8 @@ class Hooks:
 
         setting.value = options
         for option in options:
-            self.ensure_utf8(setting, option)
+            if option != '':
+                self.ensure_utf8(setting, option)
 
     def ensure_utf8(self, setting: SettingOption, filename: str):
         settings = setting.settings
