@@ -188,15 +188,33 @@ class Hooks:
                 break
             elif choice != '2':
                 cprint('Invalid option', 'red', attrs=['bold'])
-                choice = input('Select Option (1 or 2): ')
+                return False
             for advertiser in advertisers:
                 options.append(input('Advertiser #{}: '.format(advertiser)))
             break
 
+        if len(options) > len(advertisers):
+            cprint('Invalid mapping. '
+                   'Cannot have more filenames ({}) '.format(len(options)) +
+                   'than advertisers ({}).'.format(len(advertisers)))
+            return False
+
+        for i in range(advertisers):
+            results = '{}:  {}'.format(
+                advertisers[i],
+                options[i] if i < len(options) else '--'
+            )
+            while True:
+                result = input('Confirm Map:\n {}\nCorrect? [y/n]: '.format(i))
+                if result == 'y':
+                    break
+                if result == 'n':
+                    return False
         setting.value = options
         for option in options:
             if option != '':
                 self.ensure_utf8(setting, option)
+        return True
 
     def ensure_utf8(self, setting: SettingOption, filename: str):
         settings = setting.settings
