@@ -200,7 +200,7 @@ class Hooks:
             return False
 
         file_map = {}
-        for i in range(advertisers):
+        for i in range(len(advertisers)):
             filename = options[i] if i < len(options) else None
             results = '{}: {}'.format(
                 advertisers[i],
