@@ -74,17 +74,19 @@ class AppSettings(AbstractSettings):
         return args
 
 
+class LastChoice:
+    file_choice: None
+
+
 class Hooks:
     """Convenience class to add all hooks
 
     Includes validation hooks, after hooks, and more.
     """
 
-    class LastChoice:
-        file_choice: None
-
     def __init__(self):
         self.storage = None
+        self.last_choice = LastChoice()
 
     def set_clients(self, setting: SettingOption):
         settings = setting.settings
@@ -175,9 +177,9 @@ class Hooks:
 
     def handle_csv_paths(self, setting: SettingOption):
         choice = setting.value
-        if LastChoice.file_choice == choice:
+        if self.last_choice.file_choice == choice:
             choice = None
-        LastChoice.file_choice = setting.value
+        self.last_choice.file_choice = setting.value
 
         if choice is list:
             for option in choice:
