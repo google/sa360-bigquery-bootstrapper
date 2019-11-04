@@ -80,6 +80,9 @@ class Hooks:
     Includes validation hooks, after hooks, and more.
     """
 
+    class LastChoice:
+        file_choice: None
+
     def __init__(self):
         self.storage = None
 
@@ -172,6 +175,10 @@ class Hooks:
 
     def handle_csv_paths(self, setting: SettingOption):
         choice = setting.value
+        if LastChoice.file_choice == choice:
+            choice = None
+        LastChoice.file_choice = setting.value
+
         if choice is list:
             for option in choice:
                 if option != '':
