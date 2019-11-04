@@ -10,6 +10,7 @@ from google.cloud.bigquery_datatransfer_v1 import types
 from google.cloud import bigquery_datatransfer
 from google.protobuf.struct_pb2 import Struct
 from termcolor import cprint
+from datetime import datetime
 
 import app_flags
 from flagmaker import AbstractSettings
@@ -84,7 +85,9 @@ class Bootstrap:
             'display_name': display_name,
             'destination_dataset_id': Datasets.raw.dataset_id,
             'data_source_id': SystemSettings.SERVICE_NAME,
-            'schedule': 'every day 00:00',
+            'schedule': 'every day {}'.format(
+                datetime.strftime(datetime.now(), '%H:%M')
+            ),
             'params': params,
             'disabled': False,
         }
@@ -96,6 +99,7 @@ class Bootstrap:
             attrs=['bold']
         )
         return result
+
 
     @staticmethod
     def config_exists(client, parent, display_name):
@@ -110,3 +114,5 @@ class Bootstrap:
 
 class SystemSettings(object):
     SERVICE_NAME = 'doubleclick_search'
+
+

@@ -2,11 +2,10 @@ from absl import flags
 from google.api_core import exceptions
 from google.cloud import storage
 from termcolor import cprint
+import os
 
 from flagmaker import AbstractSettings
 from flagmaker import SettingOption
-from flagmaker.building_blocks import SettingsInterface
-from flagmaker.exceptions import FlagMarkerInternalError
 
 
 class AppSettings(AbstractSettings):
@@ -99,7 +98,7 @@ class Hooks:
 
         while True:
             if 'buckets' not in setting.custom_data:
-                return
+                return True
             if setting.value.isnumeric():
                 val = int(setting.value)
                 if val <= len(setting.custom_data['buckets']):
@@ -162,25 +161,24 @@ class Hooks:
         filename = setting.value
         bucket_name = settings['storage_bucket'].value
         bucket = self.storage.get_bucket(settings['storage_bucket'].value)
-        file = None
         if filename.startswith('gs://'):
             filename = filename.replace('gs://{}/'.format(bucket_name), '')
             file = bucket.blob(filename)
             with open('/tmp/' + filename, 'w+b') as fh:
                 file.download_to_file(fh, self.storage)
         else:
-            file = bucket.blob(filename)
+            file = bucket.blob('{}/{}'.format(os.environ['HOME'], filename))
 
         def try_decode(fname, encoding):
             with open('/tmp/' + fname, 'rb') as fh:
                 if encoding == 'utf-8':
-                    contents = fh.read()
-                    contents.decode(encoding)
-                    return contents
-                contents = fh.read().decode(encoding).encode('utf-8')
+                    file_data = fh.read()
+                    file_data.decode(encoding)
+                    return file_data
+                file_data = fh.read().decode(encoding).encode('utf-8')
                 cprint('Found a {}-'.format(encoding) +
                        'encoded file and turned to utf-8', 'cyan')
-                return contents
+                return file_data
 
         for encoding in ['utf-8', 'utf-16', 'latin-1']:
             try:

@@ -15,7 +15,7 @@ Enable the following APIs
 - [Search Ads 360](https://console.cloud.google.com/apis/library/doubleclicksearch.googleapis.com?project={{project}})
 - [Cloud Storage](https://console.cloud.google.com/apis/library/storage-component.googleapis.com?project={{project}})
 - [BigQuery](https://console.cloud.google.com/apis/library/bigquery-json.googleapis.com?project={{project}})
-
+- [BigQuery Storage](https://console.cloud.google.com/apis/library/bigquerystorage.googleapis.com?project={{project}})
 
 ## Set project ID
 
@@ -32,7 +32,16 @@ but you should only have to run it one time.
     && echo "PATH=\$PATH:$HOME/.local/bin" >> $HOME/.bashrc \
     && source ~/.bashrc
     
-    
+
+## White List
+Fill out 
+[this form](
+https://docs.google.com/forms/d/e/1FAIpQLSeNaY1aO-vn9WEmd5BW8hGPjIXQrjqse7vikUlh6KMf2OAQ4w/viewform
+) with your project number (note: you can find this below the Project ID on your [console](
+http://console.cloud.google.com/home/dashboard?project={{project-id}}
+) home page)
+and wait ~10 minutes to allow your project to be enabled.
+
 ## Run deploy script
 
 Now we will run the deploy script. It will be interactive, so be sure to follow the prompts below.
