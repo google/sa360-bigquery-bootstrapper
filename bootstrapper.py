@@ -451,7 +451,7 @@ class CreateViews:
             keywordId{deviceSegment},
             SUM(revenue) revenue,
             SUM(conversions) conversions
-          FROM `{project}.{views}.{historical_conversions}` o
+          FROM `{project}.{view_data}.{historical_conversions}` o
           GROUP BY 
             date, 
             keywordId{deviceSegment}
@@ -472,7 +472,7 @@ class CreateViews:
             AND c.date=d.date 
             AND c.date > (
                 SELECT MAX(date) 
-                FROM `{project}.{raw_data}.{historical_conversions}`
+                FROM `{project}.{view_data}.{historical_conversions}`
             )
         GROUP BY
             d.date, 
@@ -481,7 +481,7 @@ class CreateViews:
             m.campaign, 
             m.account{deviceSegment},
             m.accountType""".format(
-            views=self.s.unwrap('view_dataset'),
+            view_data=self.s.unwrap('view_dataset'),
             keyword_mapper=views.get(ViewTypes.KEYWORD_MAPPER),
             deviceSegment=(',\n' + 'd.deviceSegment AS Device_Segment')
                           if self.s.unwrap('has_device_segment') else '',
