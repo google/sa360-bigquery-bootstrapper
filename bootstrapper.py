@@ -142,27 +142,24 @@ class Bootstrap:
             return
         file = file_map[advertiser]
         dataset = self.settings['raw_dataset']
+        dataset_ref: bigquery.dataset.Dataset = client.get_dataset(dataset)
         table_name = '{}.{}.{}_{}'.format(
             project,
             dataset,
             self.settings['historical_table_name'],
             advertiser
         )
-        schema = self.guess_schema(file)
-        table = bigquery.Table(table_name, schema=schema)
-        external_config = bigquery.ExternalConfig(
-            bigquery.ExternalSourceFormat.CSV
+        uri = 'gs://{}/{}'.format(self.settings['storage_bucket'], file)
+
+        job_config = bigquery.LoadJobConfig()
+        job_config.schema = self.guess_schema(file)
+        job_config.skip_leading_rows = 1
+        job_config.source_format = bigquery.ExternalSourceFormat.CSV
+        load_job = client.load_table_from_uri(
+            uri, dataset_ref.table(table_name), job_config=job_config
         )
-        external_config.source_uris = [
-            'gs://{}/{}'.format(
-                self.settings['storage_bucket'],
-                file,
-            )
-        ]
-        print(external_config.source_uris)
-        table.external_data_configuration = external_config
         try:
-            client.create_table(table)
+            load_job.result()
             cprint(
                 'Created table {}'.format(table_name),
                 'green'
