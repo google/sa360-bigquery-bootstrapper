@@ -137,10 +137,7 @@ class Bootstrap:
             cprint('No historical file provided for {}'.format(advertiser),
                    'red')
             return
-        file = 'gs://{}/{}'.format(
-            self.settings['storage_bucket'],
-            self.settings.custom['file_map'][advertiser]
-        )
+        file = self.settings.custom['file_map'][advertiser]
         dataset = self.settings['raw_dataset']
         table_name = '{}.{}.{}_{}'.format(
             project,
@@ -148,12 +145,16 @@ class Bootstrap:
             self.settings['historical_table_name'],
             advertiser
         )
-        schema = self.guess_schema(self.settings.custom['file_map'][advertiser])
+        schema = self.guess_schema(file)
         table = bigquery.Table(table_name, schema=schema)
         external_config = bigquery.ExternalConfig(
             bigquery.ExternalSourceFormat.CSV
         )
         external_config.source_uris = [
+            'gs://{}/{}'.format(
+                self.settings['storage_bucket'],
+                file,
+            )
         ]
         table.external_data_configuration = external_config
         try:
