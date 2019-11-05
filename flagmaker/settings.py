@@ -80,9 +80,14 @@ class SettingOption(SettingOptionInterface):
             value = int(value)
         self._value.set_val(value)
         # perform actions
-        in_called = self.after is not None and self.after not in self.called
+
+        if self.called is None:
+            self._error = False
+            return
+
+        in_called = (self.value, self.after) not in self.called
         if in_called or self._error:
-            self.called[self.after] = True
+            self.called[(self.value, self.after)] = True
             self._error = not self.after(self)
         else:
             self._error = False
