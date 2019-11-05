@@ -24,6 +24,7 @@ class SettingUtil:
     def unwrap(self, key):
         return self.settings[key].value
 
+
 class Aggregation(Enum):
     SUM = 1
     COUNT = 2

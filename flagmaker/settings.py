@@ -19,7 +19,7 @@ class SettingOption(SettingOptionInterface):
     _value: Value = None
     required: bool = False
     validation: callable = None
-    show: callable = None
+    conditional: callable = None
     after: callable = None
     prompt: callable or str = None
     custom_data: StringKeyDict = {}
@@ -33,7 +33,7 @@ class SettingOption(SettingOptionInterface):
     @classmethod
     def create(cls, settings: SettingsInterface, helptext=None, default=None,
                method=flags.DEFINE_string, required=True, validation=None,
-               show=None, after=None, prompt=None,
+               conditional=None, after=None, prompt=None,
                include_in_interactive=True):
         fl = cls()
         fl.settings = settings
@@ -42,7 +42,7 @@ class SettingOption(SettingOptionInterface):
         fl.method = method
         fl.required = required
         fl.validation = validation
-        fl.show = show
+        fl.conditional = conditional
         fl.after = after
         fl.prompt = prompt
         fl.include_in_interactive = include_in_interactive
@@ -124,7 +124,7 @@ class SettingOption(SettingOptionInterface):
 
     def maybe_needs_input(self):
         return not self.value_explicitly_set() and (
-            self.show is None or self.show())
+            self.conditional is None or self.conditional())
 
     def get_method(self):
         return self.method

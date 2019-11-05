@@ -63,7 +63,7 @@ class AppSettings(AbstractSettings):
                     self,
                     'Name of historical table (suffix will be advertiser ID)',
                     default='historical',
-                    show=lambda: args['has_historical_data'].value,
+                    conditional=lambda: args['has_historical_data'].value,
                 ),
                 'file_path': SettingOption.create(
                     self,
@@ -72,37 +72,83 @@ class AppSettings(AbstractSettings):
                     method=flags.DEFINE_list,
                     prompt=self.hooks.get_file_paths,
                 ),
-                'date_column_name': SettingOption.create(
-                    self,
-                    'Historical: ',
-                    default='date_column_name',
-                ),
             }),
             SettingBlock('Historical Columns', {
+                'account_column_name': SettingOption.create(
+                    self,
+                    'Column name for the Account Name',
+                    default='account_name',
+                ),
                 'campaign_column_name': SettingOption.create(
                     self,
                     'Campaign Column Name for Historical Data '
-                    '(only if including historical data)'
+                    '(only if including historical data)',
+                    default='campaign_name'
+                ),
+                'has_revenue_column': SettingOption.create(
+                    self,
+                    'Does the report show revenue?',
+                    default=True,
+                    method=flags.DEFINE_bool,
+                ),
+                'revenue_column_name': SettingOption.create(
+                    self,
+                    'Column name for revenue gained from conversion(s)\n '
+                    'If left blank, then no revenue will be recorded.\n'
+                    'Column Name',
+                    default='revenue',
+                    required=False,
+                    conditional=lambda s: s['has_revenue_column'].value
+                ),
+                'has_device_segment': SettingOption.create(
+                    self,
+                    'Does the report have a device segment column?',
+                    default=True,
+                    method=flags.DEFINE_bool,
+                ),
+                'device_segment_column_name': SettingOption.create(
+                    self,
+                    'Device Segment Column Name (if there is none, omit)',
+                    default='device_segment',
+                    conditional=lambda s: s['has_device_segment'].value
+                ),
+                'report_level': SettingOption.create(
+                    self,
+                    'Specify the report level of the '
+                    'advertisers being uploaded.',
+                    default='keyword',
+                    method=AppSettings.define_enum_helper(
+                        choices=['conversion','keyword','campaign']
+                    ),
+                ),
+                'date_column_name': SettingOption.create(
+                    self,
+                    'Column name for the Date Value',
+                    default='date',
+                ),
+                'adgroup_column_name': SettingOption.create(
+                    self,
+                    'Column name for the ad group name',
+                    default='ad_group_name',
+                    conditional=lambda s: s['report_level'].value != 'campaign',
+                ),
+                'keyword_match_type': SettingOption.create(
+                    self,
+                    'Keyword Match Type [EXACT/PHRASE/BROAD etc.] '
+                    '(omit if uploading a campaign-level report)',
+                    default='match_type',
+                    conditional=lambda s: s['report_level'].value != 'campaign',
                 ),
             }, conditional=lambda s: s['has_historical_data'].value)
         ]
         return args
-        '''
-conversion_level_report = True #@param {type: "boolean"}
-conversion_count_column = "conversions" #@param {type: "string'}
-#@markdown *Will default to "1" per row if left blank.*
-campaign_column_name = "campaign_name" #@param {type: "string"}
-conversion_qualitative_field = "" #@param {type: "string"}
-#@markdown *Will default to "0" per row if left blank, or no revenue*
-campaign_column_name = "campaign_name" #@param {type: "string"}
-adgroup_column_name = "publisher_group_name" #@param {type: "string"}
-date_column_name = "order_date" #@param {type: "string"}
-account_column_name = "pub_account" #@param {type: "string"}
-has_device_segment = False #@param {type:"boolean"}
-keyword_match_type = "Match_Type" #@param {type: "string"}
-device_segment_column_name = "deviceSegment" #@param {type:"string"}
-        '''
 
+    @staticmethod
+    def define_enum_helper(choices):
+        def inner(*args, **kwargs):
+            kwargs['enum_values'] = choices
+            return flags.DEFINE_enum(*args, **kwargs)
+        return inner
 
 class Hooks:
     """Convenience class to add all hooks
