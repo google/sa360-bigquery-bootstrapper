@@ -426,7 +426,7 @@ class CreateViews:
         m.accountType Account_Type,
         SUM(clicks) Clicks, 
         SUM(impr) Impressions, 
-        SUM(avgPos) Weighted_Pos,
+        SUM(weightedPos) Weighted_Pos,
         COALESCE(SUM(cost), 0) Cost,
         COALESCE(SUM(c.revenue), 0) + COALESCE(SUM(h.revenue), 0) Revenue,
         COALESCE(SUM(c.conversions), 0) + COALESCE(SUM(h.conversions), 0) Conversions
