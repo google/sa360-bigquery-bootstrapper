@@ -160,15 +160,14 @@ class Bootstrap:
             table_name,
         )
         uri = 'gs://{}/{}'.format(self.s.unwrap('storage_bucket'), file)
-
         job_config = bigquery.LoadJobConfig()
         job_config.schema = self.guess_schema(file)
         job_config.skip_leading_rows = 1
         job_config.source_format = bigquery.ExternalSourceFormat.CSV
-        load_job = client.load_table_from_uri(
-            uri, dataset_ref.table(table_name), job_config=job_config
-        )
         try:
+            load_job = client.load_table_from_uri(
+                uri, dataset_ref.table(table_name), job_config=job_config
+            )
             load_job.result()
             cprint(
                 'Created table {}'.format(full_table_name),
@@ -180,6 +179,12 @@ class Bootstrap:
                 'red'
             )
             pass
+        except BadRequest as err:
+            cprint(err.message, 'red', attrs=['bold'])
+            if len(err.errors) > 0:
+                for err in err.errors:
+                    cprint('- {}'.format(err.message), 'red')
+            exit(1)
 
     @staticmethod
     def config_exists(client, parent, display_name):
