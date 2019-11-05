@@ -85,9 +85,9 @@ class SettingOption(SettingOptionInterface):
             self._error = False
             return
 
-        in_called = (self.value, self.after) not in self.called
+        in_called = (self, self.after) not in self.called
         if in_called or self._error:
-            self.called[(self.value, self.after)] = True
+            self.called[(self, self.after)] = True
             self._error = not self.after(self)
         else:
             self._error = False
