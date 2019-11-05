@@ -269,6 +269,7 @@ class CreateViews:
                 func_name if func_name is not None else view_name.value
             )(adv)
             logging.debug(view.view_query)
+            self.client.get_table(view_name)
             try:
                 self.client.create_table(view)
                 cprint('+ created {}'.format(adv_view), 'green')
