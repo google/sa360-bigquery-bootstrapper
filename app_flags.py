@@ -85,7 +85,6 @@ class Hooks:
 
     def set_clients(self, setting: SettingOption):
         settings = setting.settings
-        print(settings['gcp_project_name'].value)
         self.storage = storage.Client(
             project=settings['gcp_project_name'].value
         )
@@ -177,7 +176,7 @@ class Hooks:
             file_map = {}
             for i in range(len(choice)):
                 option = choice[i]
-                advertiser = choice[i]
+                advertiser = advertisers[i]
                 file_map[advertiser] = option
                 if option != '':
                     self.ensure_utf8(setting, option)

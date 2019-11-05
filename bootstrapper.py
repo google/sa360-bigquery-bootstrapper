@@ -104,8 +104,6 @@ class Bootstrap:
         return result
 
     def load_historical_tables(self, client, project, advertiser):
-        print(self.settings.custom)
-        exit(1)
         if advertiser not in self.settings.custom['file_map']:
             cprint('No historical file provided for {}'.format(advertiser),
                    'red')

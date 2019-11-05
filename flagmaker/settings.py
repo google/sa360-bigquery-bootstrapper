@@ -112,7 +112,6 @@ class SettingOption(SettingOptionInterface):
                     continue
             else:
                 self.value = value
-            print(self._error)
             if not Validator.validate(self) or self._error:
                 continue
             if self.value_explicitly_set() or not self.required:
