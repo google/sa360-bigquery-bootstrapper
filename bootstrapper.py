@@ -264,7 +264,7 @@ class CreateViews:
             view_ref = DataSets.views.table(adv_view)
             view = bigquery.Table(view_ref)
             logging.debug(adv, view_name)
-            view_query = getattr(
+            view.view_query = getattr(
                 self,
                 func_name if func_name is not None else view_name.value
             )(adv)
