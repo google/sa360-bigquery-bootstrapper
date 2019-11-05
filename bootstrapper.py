@@ -34,7 +34,7 @@ from termcolor import cprint
 
 import app_flags
 from utilities import *
-from flagmaker import AbstractSettings
+from flagmaker.settings import AbstractSettings
 from flagmaker.settings import Config
 
 
