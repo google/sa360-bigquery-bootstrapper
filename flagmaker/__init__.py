@@ -43,6 +43,7 @@ class AbstractSettings(SettingsInterface):
         first = True
         interactive_mode = self.args[0].settings.pop('interactive')
         for block in self.args:
+            header_shown = False
             if block.conditional is not None and not block.conditional(self):
                 continue
             for k, setting in block.settings.items():
@@ -53,6 +54,10 @@ class AbstractSettings(SettingsInterface):
                     if first:
                         cprint('Interactive Setup', attrs=['bold'])
                         first = False
+                    if not header_shown:
+                        cprint(block.name, attrs=['bold'])
+                        print('=============================')
+                        header_shown = True
                     if setting.include_in_interactive:
                         setting.set_value(prompt=setting.get_prompt(k))
         return self
