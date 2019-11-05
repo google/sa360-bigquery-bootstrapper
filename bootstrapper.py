@@ -107,7 +107,7 @@ class Bootstrap:
         bucket = s_cli.get_bucket(self.settings['storage_bucket'].value)
         blob = bucket.blob(file)
         result = blob.download_as_string(s_cli, 0, 1000)
-        data = result.split('\n')[0:2]
+        data = result.decode().split('\n')[0:2]
         schema = []
         for col in range(len(data[0])):
             val = data[1][col]
