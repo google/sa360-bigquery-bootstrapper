@@ -269,8 +269,12 @@ class CreateViews:
                 func_name if func_name is not None else view_name.value
             )(adv)
             logging.debug(view.view_query)
-            self.client.create_table(view, exists_ok=True)
-            cprint('+ {}'.format(adv_view), 'green')
+            try:
+                self.client.create_table(view)
+                cprint('+ created {}'.format(adv_view), 'green')
+            except Conflict:
+                self.client.update_table(view)
+                cprint('= updated {}'.format(adv_view), 'green')
             self.keyword_mapper(adv)
 
     def historical_conversions(self, advertiser):
