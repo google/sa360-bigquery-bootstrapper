@@ -277,7 +277,7 @@ class CreateViews:
                 cprint('= updated {}'.format(adv_view), 'green')
             except NotFound:
                 view = bigquery.Table(view_ref)
-                logging.debug(view.view_query)
+                logging.debug(view_query)
                 view.view_query = view_query
                 self.client.create_table(view)
                 cprint('+ created {}'.format(adv_view), 'green')
