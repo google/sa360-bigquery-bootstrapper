@@ -113,13 +113,13 @@ class Bootstrap:
         bucket = s_cli.get_bucket(self.s.unwrap('storage_bucket'))
         blob = bucket.blob(file)
         blob.name = file
-        result = blob.download_as_string(s_cli, 0, 1000)
+        result = blob.download_as_string(s_cli, 0, 10000)
         rows = result.decode().split('\n')[0:2]
         schema = []
         data = list(csv.reader(rows, delimiter=','))
         for col in range(len(data[0])):
-            val = data[1][col]
             key = data[0][col]
+            val = data[1][col]
             if val.isnumeric() and len(val) < 5:
                 schema.append(bigquery.SchemaField(
                     key,
