@@ -107,7 +107,8 @@ class Bootstrap:
     def guess_schema(self, file):
         if file.startswith('gs://'):
             file = file.replace('gs://{}/'.format(
-                self.s.unwrap('bucket_name')), '')
+                self.s.unwrap('bucket_name')), ''
+            )
         s_cli = self.settings.custom['storage_client']  # type: storage.Client
         bucket = s_cli.get_bucket(self.s.unwrap('storage_bucket'))
         blob = bucket.blob(file)
