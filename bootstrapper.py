@@ -273,12 +273,15 @@ class CreateViews:
                 view.view_query = view_query
                 cprint('= updated {}'.format(adv_view), 'green')
             except NotFound as err:
-                logging.debug('error:\n-----\n%s\n-----\n', err)
-                view = bigquery.Table(view_ref)
-                logging.debug(view.table_id)
-                view.view_query = view_query
-                self.client.create_table(view)
-                cprint('+ created {}'.format(adv_view), 'green')
+                try:
+                    logging.debug('error:\n-----\n%s\n-----\n', err)
+                    view = bigquery.Table(view_ref)
+                    logging.debug('%s.%s', view.dataset_id, view.table_id)
+                    view.view_query = view_query
+                    self.client.create_table(view)
+                    cprint('+ created {}'.format(adv_view), 'green')
+                except NotFound as err:
+                    logging.debug('error2:\n-----\n%s\n-----\n', err)
             self.keyword_mapper(adv)
 
     def historical_conversions(self, advertiser):
