@@ -1,6 +1,6 @@
 from datetime import datetime
 
-import dateutil
+from dateutil.parser import parse as parse_date
 from absl import app
 from google.api_core.exceptions import BadRequest
 from google.api_core.exceptions import Conflict
@@ -119,7 +119,7 @@ class Bootstrap:
                 ))
             else:
                 try:
-                    dateutil.parser.parse(val)
+                    parse_date(val)
                     schema.append(bigquery.SchemaField(
                         key,
                         StandardSqlDataType.DATE
