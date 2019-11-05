@@ -182,8 +182,8 @@ class Bootstrap:
         except BadRequest as err:
             cprint(err.message, 'red', attrs=['bold'])
             if len(err.errors) > 0:
-                for err in err.errors:
-                    cprint('- {}'.format(err.message), 'red')
+                for e in err.errors:
+                    cprint('- {}'.format(e['debugInfo']), 'red')
             exit(1)
 
     @staticmethod
