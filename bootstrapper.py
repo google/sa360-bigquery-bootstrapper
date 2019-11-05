@@ -109,11 +109,14 @@ class Bootstrap:
                    'red')
             return
         file = self.settings.custom['file_map'][advertiser]
-        table_name = '{}_{}'.format(
+        dataset = self.settings['raw_dataset']
+        table_name = '{}.{}.{}_{}'.format(
+            project,
+            dataset,
             self.settings['historical_table_name'],
             advertiser
         )
-        table = bigquery.Table(table_name, self.settings['raw_dataset'])
+        table = bigquery.Table(table_name, dataset)
         external_config = bigquery.ExternalConfig(
             bigquery.ExternalSourceFormat.CSV
         )
