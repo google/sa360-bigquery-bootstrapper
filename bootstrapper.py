@@ -268,11 +268,8 @@ class CreateViews:
                 func_name if func_name is not None else view_name.value
             )(adv)
             try:
-                view: Table = self.client.get_table('{}.{}.{}'.format(
-                    self.s.unwrap('gcp_project_name'),
-                    DataSets.views.dataset_id,
-                    adv_view
-                ))
+                logging.debug(view_ref)
+                view: Table = self.client.get_table(view_ref)
                 view.view_query = view_query
                 cprint('= updated {}'.format(adv_view), 'green')
             except NotFound:
