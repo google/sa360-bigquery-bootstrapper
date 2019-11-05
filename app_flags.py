@@ -87,6 +87,12 @@ class AppSettings(AbstractSettings):
                     default='campaign_name',
                     after=self.hooks.map_historical_column,
                 ),
+                'conversion_count_column': SettingOption.create(
+                    self,
+                    'Specify the conversion column',
+                    default='conversions',
+                    after=self.hooks.map_historical_column,
+                ),
                 'has_revenue_column': SettingOption.create(
                     self,
                     'Does the report show revenue?',
