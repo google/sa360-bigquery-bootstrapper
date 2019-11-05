@@ -128,10 +128,10 @@ class Bootstrap:
             else:
                 try:
                     parse_date(val)
-                    schema.append(bigquery.SchemaField(
+                    field = bigquery.SchemaField(
                         key,
                         'DATE',
-                    ))
+                    )
                 except ValueError:
                     schema.append(bigquery.SchemaField(
                         key,
@@ -161,7 +161,7 @@ class Bootstrap:
         )
         uri = 'gs://{}/{}'.format(self.s.unwrap('storage_bucket'), file)
         job_config = bigquery.LoadJobConfig()
-        job_config.schema = self.guess_schema(file)
+        job_config.autodetect = True
         job_config.skip_leading_rows = 1
         job_config.source_format = bigquery.ExternalSourceFormat.CSV
         try:
