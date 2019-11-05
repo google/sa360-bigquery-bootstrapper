@@ -28,6 +28,7 @@ from google.api_core.exceptions import NotFound
 from google.cloud import bigquery
 from google.cloud import bigquery_datatransfer
 from google.cloud import storage
+from google.cloud.bigquery import Table
 from google.cloud.bigquery.dataset import Dataset
 from google.protobuf.struct_pb2 import Struct
 from termcolor import cprint
@@ -262,20 +263,24 @@ class CreateViews:
             logging.info(view_name.value)
             adv_view = get_view_name(view_name, adv)
             view_ref = DataSets.views.table(adv_view)
-            view = bigquery.Table(view_ref)
-            logging.debug(adv, view_name)
-            view.view_query = getattr(
+            view_query = getattr(
                 self,
                 func_name if func_name is not None else view_name.value
             )(adv)
-            logging.debug(view.view_query)
-            self.client.get_table(adv_view)
             try:
+                view: Table = self.client.get_table('{}.{}.{}'.format(
+                    self.s.unwrap('gcp_project_name'),
+                    DataSets.views.dataset_id,
+                    adv_view
+                ))
+                view.view_query = view_query
+            except KeyError:
+                view = bigquery.Table(view_ref)
+                logging.debug(adv, view_name)
+                logging.debug(view.view_query)
+                view.view_query = view_query
                 self.client.create_table(view)
                 cprint('+ created {}'.format(adv_view), 'green')
-            except Conflict:
-                self.client.update_table(view)
-                cprint('= updated {}'.format(adv_view), 'green')
             self.keyword_mapper(adv)
 
     def historical_conversions(self, advertiser):
