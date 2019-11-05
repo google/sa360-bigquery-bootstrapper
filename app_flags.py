@@ -78,12 +78,14 @@ class AppSettings(AbstractSettings):
                     self,
                     'Column name for the Account Name',
                     default='account_name',
+                    after=self.hooks.map_historical_column,
                 ),
                 'campaign_column_name': SettingOption.create(
                     self,
                     'Campaign Column Name for Historical Data '
                     '(only if including historical data)',
-                    default='campaign_name'
+                    default='campaign_name',
+                    after=self.hooks.map_historical_column,
                 ),
                 'has_revenue_column': SettingOption.create(
                     self,
@@ -98,7 +100,8 @@ class AppSettings(AbstractSettings):
                     'Column Name',
                     default='revenue',
                     required=False,
-                    conditional=lambda s: s['has_revenue_column'].value
+                    conditional=lambda s: s['has_revenue_column'].value,
+                    after=self.hooks.map_historical_column,
                 ),
                 'has_device_segment': SettingOption.create(
                     self,
@@ -110,7 +113,8 @@ class AppSettings(AbstractSettings):
                     self,
                     'Device Segment Column Name (if there is none, omit)',
                     default='device_segment',
-                    conditional=lambda s: s['has_device_segment'].value
+                    conditional=lambda s: s['has_device_segment'].value,
+                    after=self.hooks.map_historical_column,
                 ),
                 'report_level': SettingOption.create(
                     self,
@@ -125,18 +129,21 @@ class AppSettings(AbstractSettings):
                     self,
                     'Column name for the Date Value',
                     default='date',
+                    after=self.hooks.map_historical_column,
                 ),
                 'adgroup_column_name': SettingOption.create(
                     self,
                     'Column name for the ad group name',
                     default='ad_group_name',
                     conditional=lambda s: s['report_level'].value != 'campaign',
+                    after=self.hooks.map_historical_column,
                 ),
                 'keyword_match_type': SettingOption.create(
                     self,
-                    'Keyword Match Type [EXACT/PHRASE/BROAD etc.] '
+                    'Keyword Match Type Column [EXACT/PHRASE/BROAD etc.] '
                     '(omit if uploading a campaign-level report)',
                     default='match_type',
+                    after=self.hooks.map_historical_column,
                     conditional=lambda s: s['report_level'].value != 'campaign',
                 ),
             }, conditional=lambda s: s['has_historical_data'].value)
@@ -357,3 +364,8 @@ class Hooks:
             except UnicodeDecodeError:
                 continue
         return True
+
+    def map_historical_column(self, setting: SettingOption):
+        if 'map' not in setting.settings.custom:
+            setting.settings.custom['historical_map'] = {}
+        setting.settings.custom['map'][setting.value] = setting.default

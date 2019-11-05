@@ -119,6 +119,10 @@ class Bootstrap:
         data = list(csv.reader(rows, delimiter=','))
         for col in range(len(data[0])):
             key = data[0][col]
+            if key in self.settings.custom['map']:
+                key = self.settings.custom['map'][key]
+            else:
+                key: str = key.replace(' ', '_').lower()
             val = data[1][col]
             if val.isnumeric() and len(val) < 5:
                 schema.append(bigquery.SchemaField(
