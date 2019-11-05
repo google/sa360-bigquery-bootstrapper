@@ -272,7 +272,8 @@ class CreateViews:
                 view: Table = self.client.get_table(view_ref)
                 view.view_query = view_query
                 cprint('= updated {}'.format(adv_view), 'green')
-            except NotFound:
+            except NotFound as err:
+                logging.debug(err)
                 view = bigquery.Table(view_ref)
                 logging.debug(view_query)
                 view.view_query = view_query
