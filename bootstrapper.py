@@ -1,3 +1,21 @@
+# /***********************************************************************
+# Copyright 2019 Google Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the 'License');
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an 'AS IS' BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Note that these code samples being shared are not official Google
+# products and are not formally supported.
+# ************************************************************************/
 import csv
 from datetime import datetime
 
@@ -20,7 +38,7 @@ from flagmaker import AbstractSettings
 from flagmaker import Config
 
 
-class Datasets:
+class DataSets:
     raw: bigquery.dataset.Dataset = None
     views: bigquery.dataset.Dataset = None
 
@@ -65,10 +83,10 @@ class Bootstrap:
             dataset = str(self.settings[v])
             dataset = Dataset.from_string('{0}.{1}'.format(project, dataset))
             try:
-                setattr(Datasets, k, client.get_dataset(dataset))
+                setattr(DataSets, k, client.get_dataset(dataset))
                 cprint('Already have dataset {}'.format(dataset), 'green')
             except NotFound:
-                setattr(Datasets, k, client.create_dataset(dataset))
+                setattr(DataSets, k, client.create_dataset(dataset))
                 cprint('Created dataset {}'.format(dataset), 'green')
 
     def load_transfers(self, cli: bigquery.Client, project, advertiser):
@@ -89,7 +107,7 @@ class Bootstrap:
         params['include_removed_entities'] = False
         config = {
             'display_name': display_name,
-            'destination_dataset_id': Datasets.raw.dataset_id,
+            'destination_dataset_id': DataSets.raw.dataset_id,
             'data_source_id': SystemSettings.SERVICE_NAME,
             'schedule': 'every day {}'.format(
                 datetime.strftime(datetime.now(), '%H:%M')
@@ -152,7 +170,7 @@ class Bootstrap:
             file = file.replace('gs://{}/'.format(
                 self.s.unwrap('storage_bucket')), ''
             )
-        dataset_ref: bigquery.dataset.Dataset = Datasets.raw
+        dataset_ref: bigquery.dataset.Dataset = DataSets.raw
         dataset: str = dataset_ref.dataset_id
         table_name = 'historical_{}'.format(advertiser)
         full_table_name = '{}.{}.{}'.format(
@@ -242,7 +260,7 @@ class CreateViews:
     def view(self, view_name: ViewTypes, func_name):
         for adv in self.s.unwrap('advertiser_id'):
             adv_view = view_name + '_' + adv
-            view_ref = Datasets.views.table(adv_view)
+            view_ref = DataSets.views.table(adv_view)
             view = bigquery.Table(view_ref)
             logging.debug(adv, view_name)
             view_query = getattr(
