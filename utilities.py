@@ -40,8 +40,10 @@ class SettingUtil(object):
 
 
 class ViewTypes(Enum):
-    HISTORICAL = 'historical'
-    KEYWORD_MAPPER = 'keyword_mapper'
+    HISTORICAL = 'Historical'
+    KEYWORD_MAPPER = 'KeywordMapper',
+    HISTORICAL_CONVERSIONS = 'HistoricalConversions',
+    REPORT_VIEW = 'ReportView',
 
 
 class ViewGetter(object):

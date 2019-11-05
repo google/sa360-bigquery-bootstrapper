@@ -202,6 +202,10 @@ class SystemSettings(object):
     SERVICE_NAME = 'doubleclick_search'
 
 
+class MethodNotCreated(Exception):
+    pass
+
+
 class CreateViews:
     client: bigquery.Client = None
     project: str = None
@@ -218,13 +222,24 @@ class CreateViews:
     def run(self):
         report_level = self.s.unwrap('report_level')
         if report_level == 'campaign':
-            self.view('campaign')  # not created yet
+            raise MethodNotCreated('Methods for campaign-only views'
+                                   ' not implemented.')
         else:
             if self.s.unwrap('has_historical_data'):
-                self.view('keyword_mapper')
-                self.view('historical_keywords')
+                self.view(
+                    ViewTypes.KEYWORD_MAPPER,
+                    'keyword_mapper'
+                )
+                self.view(
+                    ViewTypes.HISTORICAL_CONVERSIONS,
+                    'historical_conversions'
+                )
+                self.view(
+                    ViewTypes.REPORT_VIEW,
+                    'report_view',
+                )
 
-    def view(self, view_name, func_name=None):
+    def view(self, view_name: ViewTypes, func_name):
         for adv in self.s.unwrap('advertiser_id'):
             adv_view = view_name + '_' + adv
             view_ref = Datasets.views.table(adv_view)
@@ -239,7 +254,7 @@ class CreateViews:
             cprint('+ {}'.format(adv_view), 'green')
             self.keyword_mapper(adv)
 
-    def historical_keywords(self, advertiser):
+    def historical_conversions(self, advertiser):
         views = ViewGetter(advertiser)
 
         sql = """SELECT 
@@ -301,19 +316,21 @@ class CreateViews:
               keyword_match_type=self.s.unwrap('keyword_match_type'),
               conversions=aggregate_if(
                   Aggregation.SUM,
-                  'h', self.s.unwrap('conversion_count_column'),
-                  'SUM(1)'
+                  self.s.unwrap('conversion_count_column'),
+                  'SUM(1)',
+                  prefix='h',
               ),
               revenue=aggregate_if(
                   Aggregation.SUM,
-                  'h', self.s.unwrap('revenue_column_name'),
-                  0
+                  self.s.unwrap('revenue_column_name'),
+                  0,
+                  prefix='h',
               ),
           )
         return sql
 
     def keyword_mapper(self, advertiser):
-        sql = """SELECT 
+        sql = '''SELECT 
             k.keywordId, 
             k.keywordText keyword,
             k.keywordMatchType,
@@ -361,9 +378,84 @@ class CreateViews:
                 c.campaign, 
                 a.account,
                 a.accountType,
-                g.adGroup""".format(
+                g.adGroup'''.format(
                     project=self.s.unwrap('gcp_project_name'),
                     raw_data=self.s.unwrap('raw_dataset'),
                     advertiser_id=advertiser,
                 )
         return sql
+
+    def report_view(self, advertiser):
+        views = ViewGetter(advertiser)
+
+        sql = """SELECT 
+        d.date Date, 
+        m.keywordId,
+        m.keyword Keyword{deviceSegment}, 
+        m.campaign Campaign, 
+        m.account Engine, 
+        m.accountType Account_Type,
+        SUM(clicks) Clicks, 
+        SUM(impr) Impressions, 
+        SUM(avgPos) Weighted_Pos,
+        COALESCE(SUM(cost), 0) Cost,
+        COALESCE(SUM(c.revenue), 0) + COALESCE(SUM(h.revenue), 0) Revenue,
+        COALESCE(SUM(c.conversions), 0) + COALESCE(SUM(h.conversions), 0) Conversions
+        FROM (
+          SELECT date, 
+            keywordId,
+            SUM(clicks) clicks, 
+            SUM(impr) impr, 
+            SUM(avgPos*impr) weightedPos,
+            SUM(cost) cost{deviceSegment}
+          FROM `{project}.{raw_data}.KeywordDeviceStats_{advertiser}`
+          GROUP BY 
+            date, 
+            keywordId{deviceSegment}
+        ) d
+        INNER JOIN `{project}.{views}.{keyword_mapper}` m
+          ON m.keywordId = d.keywordId
+        LEFT JOIN (
+          SELECT 
+            date, 
+            keywordId, 
+            SUM(dfaRevenue) revenue,
+            SUM(dfaTransactions) conversions
+          FROM `{project}.{raw_data}.KeywordFloodlightAndDeviceStats_{advertiser}`
+          GROUP BY date, keywordId
+        ) c 
+            ON c.keywordId=d.keywordId 
+            AND c.date=d.date 
+            AND c.date > MAX(h.date)
+        LEFT JOIN (
+          SELECT
+            date,
+            keywordId{deviceSegment},
+            SUM(revenue) revenue,
+            SUM(conversions) conversions
+          FROM `{project}.{views}.{historical_conversions}` o
+          GROUP BY 
+            date, 
+            keywordId{deviceSegment}
+        ) h 
+            ON h.keywordId=d.keywordId 
+            AND h.date=d.date
+        GROUP BY
+            d.date, 
+            m.keywordId, 
+            m.keyword, 
+            m.campaign, 
+            m.account{deviceSegment},
+            m.accountType""".format(
+            views=self.s.unwrap('view_dataset'),
+            keyword_mapper=views.get(ViewTypes.KEYWORD_MAPPER),
+            deviceSegment=(',\n' + 'd.deviceSegment AS Device_Segment')
+                          if self.s.unwrap('has_device_segment') else '',
+            project=self.s.unwrap('gcp_project_name'),
+            raw_data=self.s.unwrap('raw_dataset'),
+            advertiser=advertiser,
+            historical_conversions=views.get(ViewTypes.HISTORICAL_CONVERSIONS),
+            switchover_date=self.s.unwrap('switchover_date'),
+        )
+        return sql
+
