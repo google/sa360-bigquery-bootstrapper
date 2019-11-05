@@ -259,13 +259,13 @@ class CreateViews:
 
     def view(self, view_name: ViewTypes, func_name):
         for adv in self.s.unwrap('advertiser_id'):
-            adv_view = view_name + '_' + adv
+            adv_view = view_name.value + '_' + adv
             view_ref = DataSets.views.table(adv_view)
             view = bigquery.Table(view_ref)
             logging.debug(adv, view_name)
             view_query = getattr(
                 self,
-                func_name if func_name is not None else view_name
+                func_name if func_name is not None else view_name.value
             )(adv)
             logging.debug(view.view_query)
             self.client.create_table(view, exists_ok=True)
