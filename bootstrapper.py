@@ -260,7 +260,7 @@ class CreateViews:
 
     def view(self, view_name: ViewTypes, func_name):
         for adv in self.s.unwrap('advertiser_id'):
-            logging.info(view_name.value)
+            logging.debug(view_name.value)
             adv_view = get_view_name(view_name, adv)
             view_ref = DataSets.views.table(adv_view)
             view_query = getattr(
@@ -274,6 +274,7 @@ class CreateViews:
                     adv_view
                 ))
                 view.view_query = view_query
+                cprint('= updated {}'.format(adv_view), 'green')
             except KeyError:
                 view = bigquery.Table(view_ref)
                 logging.debug(adv, view_name)
