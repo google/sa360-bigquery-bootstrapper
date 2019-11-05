@@ -148,3 +148,17 @@ class SettingOption(SettingOptionInterface):
 
 
 SettingOptions = Dict[str, SettingOption]
+
+class SettingBlock:
+    def __init__(self, block: str,
+                 settings: SettingOptions,
+                 conditional: callable = None):
+        self.name = block
+        self.settings = settings
+        self.conditional = conditional
+
+    def get(self):
+        cprint('{}'.format(self.name), None, attrs=['bold'])
+        print('==========================')
+
+

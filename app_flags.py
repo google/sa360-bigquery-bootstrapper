@@ -7,7 +7,8 @@ import os
 
 from flagmaker import AbstractSettings
 from flagmaker import SettingOption
-
+from flagmaker.settings import SettingBlock
+from typing import List
 
 class AppSettings(AbstractSettings):
     """Settings for the BQ bootstrapper
@@ -18,60 +19,89 @@ class AppSettings(AbstractSettings):
     def __init__(self):
         self.hooks = Hooks()
 
-    def settings(self) -> dict:
-        args = {
-            'gcp_project_name': SettingOption.create(
-                self,
-                'GCP Project Name',
-                after=self.hooks.set_clients,
-            ),
-            'raw_dataset': SettingOption.create(
-                self,
-                'Dataset where raw data will be stored',
-                default='raw'
-            ),
-            'view_dataset': SettingOption.create(
-                self,
-                'Dataset where view data will be generated and stored',
-                default='views'
-            ),
-            'location': SettingOption.create(
-                self,
-                'Cloud Location (2 letter country code)',
-                default='US'
-            ),
-            'agency_id': SettingOption.create(self, 'SA360 Agency ID'),
-            'advertiser_id': SettingOption.create(
-                self,
-                'SA360 Advertiser IDs',
-                method=flags.DEFINE_list,
-            ),
-            'has_historical_data': SettingOption.create(
-                self,
-                'Include Historical Data?',
-                method=flags.DEFINE_boolean,
-            ),
-            'storage_bucket': SettingOption.create(
-                self,
-                'Storage Bucket Name',
-                prompt=self.hooks.bucket_options,
-                after=self.hooks.create_bucket,
-            ),
-            'historical_table_name': SettingOption.create(
-                self,
-                'Name of historical table (suffix will be advertiser ID)',
-                default='historical',
-                show=lambda: args['has_historical_data'].value,
-            ),
-            'file_path': SettingOption.create(
-                self,
-                'Historical Data CSV File Path',
-                after=self.hooks.handle_csv_paths,
-                method=flags.DEFINE_list,
-                prompt=self.hooks.get_file_paths,
-            )
-        }
+    def settings(self) -> List[SettingBlock]:
+        args = [
+            SettingBlock('General Settings', {
+                'gcp_project_name': SettingOption.create(
+                    self,
+                    'GCP Project Name',
+                    after=self.hooks.set_clients,
+                ),
+                'raw_dataset': SettingOption.create(
+                    self,
+                    'Dataset where raw data will be stored',
+                    default='raw'
+                ),
+                'view_dataset': SettingOption.create(
+                    self,
+                    'Dataset where view data will be generated and stored',
+                    default='views'
+                ),
+                'location': SettingOption.create(
+                    self,
+                    'Cloud Location (2 letter country code)',
+                    default='US'
+                ),
+                'agency_id': SettingOption.create(self, 'SA360 Agency ID'),
+                'advertiser_id': SettingOption.create(
+                    self,
+                    'SA360 Advertiser IDs',
+                    method=flags.DEFINE_list,
+                ),
+                'has_historical_data': SettingOption.create(
+                    self,
+                    'Include Historical Data?',
+                    method=flags.DEFINE_boolean,
+                ),
+                'storage_bucket': SettingOption.create(
+                    self,
+                    'Storage Bucket Name',
+                    prompt=self.hooks.bucket_options,
+                    after=self.hooks.create_bucket,
+                ),
+                'historical_table_name': SettingOption.create(
+                    self,
+                    'Name of historical table (suffix will be advertiser ID)',
+                    default='historical',
+                    show=lambda: args['has_historical_data'].value,
+                ),
+                'file_path': SettingOption.create(
+                    self,
+                    'Historical Data CSV File Path',
+                    after=self.hooks.handle_csv_paths,
+                    method=flags.DEFINE_list,
+                    prompt=self.hooks.get_file_paths,
+                ),
+                'date_column_name': SettingOption.create(
+                    self,
+                    'Historical: ',
+                    default='date_column_name',
+                ),
+            }),
+            SettingBlock('Historical Columns', {
+                'campaign_column_name': SettingOption.create(
+                    self,
+                    'Campaign Column Name for Historical Data '
+                    '(only if including historical data)'
+                ),
+            }, conditional=lambda s: s['has_historical_data'].value)
+        ]
         return args
+        '''
+conversion_level_report = True #@param {type: "boolean"}
+conversion_count_column = "conversions" #@param {type: "string'}
+#@markdown *Will default to "1" per row if left blank.*
+campaign_column_name = "campaign_name" #@param {type: "string"}
+conversion_qualitative_field = "" #@param {type: "string"}
+#@markdown *Will default to "0" per row if left blank, or no revenue*
+campaign_column_name = "campaign_name" #@param {type: "string"}
+adgroup_column_name = "publisher_group_name" #@param {type: "string"}
+date_column_name = "order_date" #@param {type: "string"}
+account_column_name = "pub_account" #@param {type: "string"}
+has_device_segment = False #@param {type:"boolean"}
+keyword_match_type = "Match_Type" #@param {type: "string"}
+device_segment_column_name = "deviceSegment" #@param {type:"string"}
+        '''
 
 
 class Hooks:
@@ -88,6 +118,7 @@ class Hooks:
         settings.custom['storage_client'] = self.storage = storage.Client(
             project=settings['gcp_project_name'].value
         )
+        return True
 
     def create_bucket(self, setting: SettingOption) -> bool:
         class ChooseAnother:

@@ -6,6 +6,9 @@ from absl import flags
 from termcolor import cprint
 from typing import ClassVar
 
+from typing import List
+
+from flagmaker.settings import SettingBlock
 from .exceptions import FlagMakerConfigurationError
 from .exceptions import FlagMakerInputError
 from .sanity import Validator
@@ -22,50 +25,56 @@ class AbstractSettings(SettingsInterface):
     Loaded from the Config class. Used to generate flags for an app.
     """
 
-    args: dict = None
+    args: List[SettingBlock] = None
+    flattened_args: dict = {}
 
     def start(self):
         """Bootstraps the settings loading process
 
         Called from load_settings. Should not be called directly.
         """
-        for k in self.args:
-            self.args[k].set_value(init=FLAGS.get_flag_value(k, None))
+        for block in self.args:
+            for k, s in block.settings.items():
+                s.set_value(init=FLAGS.get_flag_value(k, None))
+                self.flattened_args[k] = s
 
     def load_settings(self):
         self.start()
         first = True
-        interactive_mode = self.args.pop('interactive')
-        for k in self.args.keys():
-            setting: SettingOption = self.args[k]
-            if setting.maybe_needs_input():
-                if not interactive_mode and setting.default:
-                    setting.set_value(init=setting.default)
-                    continue
-                if first:
-                    cprint('Interactive Setup', attrs=['bold'])
-                    first = False
-                if setting.include_in_interactive:
-                    setting.set_value(prompt=setting.get_prompt(k))
+        interactive_mode = self.args[0].settings.pop('interactive')
+        for block in self.args:
+            if block.conditional is not None and not block.conditional():
+                continue
+            for k, setting in block.settings.items():
+                if setting.maybe_needs_input():
+                    if not interactive_mode and setting.default:
+                        setting.set_value(init=setting.default)
+                        continue
+                    if first:
+                        cprint('Interactive Setup', attrs=['bold'])
+                        first = False
+                    if setting.include_in_interactive:
+                        setting.set_value(prompt=setting.get_prompt(k))
         return self
 
     def assign_flags(self) -> flags:
-        for k in self.args:
-            kwargs = {
-                'default': None,
-            }
-            if not self.args[k].include_in_interactive:
-                kwargs['default'] = self.args[k].default
-            self.args[k].method(k, help=self.args[k].help, **kwargs)
+        for block in self.args:
+            for k, setting in block.settings.items():
+                kwargs = {
+                    'default': None,
+                }
+                if not setting.include_in_interactive:
+                    kwargs['default'] = setting.default
+                setting.method(k, help=setting.help, **kwargs)
+                self.flattened_args[k] = setting
         return FLAGS
 
     def __getitem__(self, item):
-        return self.args[item]
+        return self.flattened_args[item]
 
     def get_settings(self):
-        settings = OrderedDict(self.settings())
         # system settings
-        settings.update({
+        settings = [SettingBlock('System Settings', {
             'interactive': SettingOption.create(
                 self,
                 'Enter Interactive Mode even to verify default values',
@@ -73,7 +82,8 @@ class AbstractSettings(SettingsInterface):
                 include_in_interactive=False,
                 method=flags.DEFINE_bool,
             ),
-        })
+        })]
+        settings += self.settings()
         return settings
 
     def install(self):
