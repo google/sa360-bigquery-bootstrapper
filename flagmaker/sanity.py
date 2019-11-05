@@ -11,10 +11,9 @@ class Validator:
         value = setting.value
         if isinstance(value, bool):
             return
-        if value == 'true' or value == '1' or value == 'false' or value == '0':
+        if value in ('true', 'True', 'false', 'False', '0', '1', True, False):
             return
-        errors.append('Invalid option '
-                      + setting.value
+        errors.append('Invalid option {}'.format(setting.value)
                       + '. Expecting true/false or 0/1')
 
     @staticmethod

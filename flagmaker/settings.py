@@ -72,11 +72,10 @@ class SettingOption(SettingOptionInterface):
             self._value.set_val(None)
             return
         if self.method == flags.DEFINE_boolean:
-            if value == '1' or value == 'true':
+            if value in ['1', 'true', 'True', True]:
                 value = True
-            elif value == '0' or value == 'false':
+            elif value in ['0', 'false', 'False', False]:
                 value = False
-                return
         elif self.method == flags.DEFINE_integer:
             value = int(value)
         self._value.set_val(value)
