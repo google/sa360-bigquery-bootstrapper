@@ -6,6 +6,7 @@ from google.api_core.exceptions import Conflict
 from google.api_core.exceptions import InvalidArgument
 from google.api_core.exceptions import NotFound
 from google.cloud import bigquery
+from google.cloud.bigquery import Table
 from google.cloud.bigquery_datatransfer_v1 import types
 from google.cloud import bigquery_datatransfer
 from google.protobuf.struct_pb2 import Struct
@@ -45,6 +46,7 @@ class Bootstrap:
                 cprint('Advertiser ID: {}'.format(advertiser),
                        'blue', attrs=['bold', 'underline'])
                 self.load_transfers(client, project, advertiser)
+                self.load_historical_tables(client, project, advertiser)
                 CreateViews(self.settings, client, project, advertiser).run()
 
         except BadRequest as err:
@@ -100,6 +102,29 @@ class Bootstrap:
             attrs=['bold']
         )
         return result
+
+    def load_historical_tables(self, client, project, advertiser):
+        if advertiser not in self.settings.custom['file_map']:
+            cprint('No historical file provided for {}'.format(advertiser),
+                   'red')
+            return
+        file = self.settings.custom['file_map']['advertiser']
+        table_name = '{}_{}'.format(
+            self.settings['historical_table_name'],
+            advertiser
+        )
+        table = bigquery.Table(table_name, self.settings['raw_dataset'])
+        external_config = bigquery.ExternalConfig(
+            bigquery.ExternalSourceFormat.CSV
+        )
+        external_config.source_uris = [
+            'gs://{}/{}'.format(self.settings['storage_bucket'], file)
+        ]
+        table.external_data_configuration = external_config
+        try:
+            client.create_table(table)
+        except Conflict:
+            pass
 
     @staticmethod
     def config_exists(client, parent, display_name):
