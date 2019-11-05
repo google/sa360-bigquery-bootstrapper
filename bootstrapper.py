@@ -108,6 +108,8 @@ class Bootstrap:
             cprint('No historical file provided for {}'.format(advertiser),
                    'red')
             return
+        print(self.settings.custom)
+        exit(1)
         file = self.settings.custom['file_map'][advertiser]
         table_name = '{}_{}'.format(
             self.settings['historical_table_name'],
