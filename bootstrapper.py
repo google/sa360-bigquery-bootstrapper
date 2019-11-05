@@ -135,7 +135,7 @@ class Bootstrap:
 
     def load_historical_tables(self, client, project, advertiser):
         file_map = self.settings.custom['file_map']
-        in_map = advertiser not in file_map
+        in_map = advertiser in file_map
         if not in_map or not file_map[advertiser]:
             cprint('No historical file provided for {}'.format(advertiser),
                    'red')
