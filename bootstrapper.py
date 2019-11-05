@@ -134,13 +134,13 @@ class Bootstrap:
         return schema
 
     def load_historical_tables(self, client, project, advertiser):
-        map = self.settings.custom['file_map']
-        in_map = advertiser not in map
-        if not in_map or not map[advertiser]:
+        file_map = self.settings.custom['file_map']
+        in_map = advertiser not in file_map
+        if not in_map or not file_map[advertiser]:
             cprint('No historical file provided for {}'.format(advertiser),
                    'red')
             return
-        file = map[advertiser]
+        file = file_map[advertiser]
         dataset = self.settings['raw_dataset']
         table_name = '{}.{}.{}_{}'.format(
             project,
