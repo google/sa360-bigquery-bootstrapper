@@ -110,7 +110,7 @@ class Bootstrap:
         result = blob.download_as_string(s_cli, 0, 1000)
         rows = result.decode().split('\n')[0:2]
         schema = []
-        data = csv.reader(rows, delimiter=',')
+        data = list(csv.reader(rows, delimiter=','))
         for col in range(len(data[0])):
             val = data[1][col]
             key = data[0][col]
