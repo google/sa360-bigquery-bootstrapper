@@ -147,7 +147,7 @@ class Bootstrap:
             self.settings['historical_table_name'],
             advertiser
         )
-        schema = self.guess_schema(file)
+        schema = self.guess_schema(self.settings.custom['file_map'][advertiser])
         table = bigquery.Table(table_name, schema=schema)
         external_config = bigquery.ExternalConfig(
             bigquery.ExternalSourceFormat.CSV
