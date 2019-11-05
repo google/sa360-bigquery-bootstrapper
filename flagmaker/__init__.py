@@ -43,7 +43,7 @@ class AbstractSettings(SettingsInterface):
         first = True
         interactive_mode = self.args[0].settings.pop('interactive')
         for block in self.args:
-            if block.conditional is not None and not block.conditional():
+            if block.conditional is not None and not block.conditional(self):
                 continue
             for k, setting in block.settings.items():
                 if setting.maybe_needs_input():

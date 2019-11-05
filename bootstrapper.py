@@ -206,7 +206,7 @@ class CreateViews:
         if report_level == 'campaign':
             self.view('campaign')  # not created yet
         else:
-            if self.s.unwrap('has_historical_view'):
+            if self.s.unwrap('has_historical_data'):
                 self.view('keyword_mapper')
                 self.view('historical_keywords')
 
@@ -215,11 +215,12 @@ class CreateViews:
             adv_view = view_name + '_' + adv
             view_ref = Datasets.views.table(adv_view)
             view = bigquery.Table(view_ref)
+            print(adv, view_name)
             view.view_query = getattr(
                 self,
-                func_name if func_name is not None else view_name,
-                adv,
-            )
+                func_name if func_name is not None else view_name
+            )(adv)
+            print(view.view_query)
             self.client.create_table(view, exists_ok=True)
             cprint('+ {}'.format(adv_view), 'green')
             self.keyword_mapper(adv)
@@ -236,27 +237,27 @@ class CreateViews:
             {revenue} revenue
           FROM `{project}.{raw}.{historical_table_name}` h
           INNER JOIN (
-            SELECT keywordId, 
-                keyword, 
-                campaign, 
+            SELECT keywordId,
+                keyword,
+                campaign,
                 keywordMatchType,
                 adGroup,
                 account
             FROM `{project}.{views}.{keyword_mapper}`
-            GROUP BY 
-                keywordId, 
-                keyword, 
-                campaign, 
+            GROUP BY
+                keywordId,
+                keyword,
+                campaign,
                 account,
                 adGroup,
                 keywordMatchType
-          ) a 
-            ON a.keyword=h.keyword 
+          ) a
+            ON a.keyword=h.keyword
             AND a.campaign=h.{campaign_column_name} 
             AND a.account=h.{account_column_name}
             AND a.adGroup=h.{adgroup_column_name}
             AND LOWER(a.keywordMatchType) = LOWER(h.{keyword_match_type})
-          GROUP BY 
+          GROUP BY
             h.{date},
             a.keywordId, 
             a.keyword, 
@@ -295,9 +296,7 @@ class CreateViews:
                   0
               ),
           )
-        print(sql)
         return sql
-
 
     def keyword_mapper(self, advertiser):
         sql = """SELECT 
@@ -309,18 +308,18 @@ class CreateViews:
             g.adGroup,
             a.accountType
             FROM (
-                keywordText, 
-                keywordId, 
-                keywordEngineId, 
-                campaignId, 
-                accountId, 
-                adgroupId, 
+                SELECT keywordText,
+                keywordId,
+                keywordEngineId,
+                campaignId,
+                accountId,
+                adgroupId,
                 keywordMatchType,
                 RANK() OVER (
                   PARTITION BY keywordText, keywordMatchType, campaignId, 
                       accountId, adGroupId
                     ORDER BY CASE WHEN status='Active' THEN 0 ELSE 1 END,
-                    ORDER BY CASE WHEN keywordEngineId IS NOT NULL THEN 0 ELSE 1 END
+                    CASE WHEN keywordEngineId IS NOT NULL THEN 0 ELSE 1 END
                   ) rank
               FROM `{project}.{raw_data}.Keyword_{advertiser_id}` c
             ) k
@@ -353,5 +352,4 @@ class CreateViews:
                     raw_data=self.s.unwrap('raw_dataset'),
                     advertiser_id=advertiser,
                 )
-        print(sql)
         return sql

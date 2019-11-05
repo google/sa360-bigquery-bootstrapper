@@ -124,7 +124,7 @@ class SettingOption(SettingOptionInterface):
 
     def maybe_needs_input(self):
         return not self.value_explicitly_set() and (
-            self.conditional is None or self.conditional())
+            self.conditional is None or self.conditional(self.settings))
 
     def get_method(self):
         return self.method
