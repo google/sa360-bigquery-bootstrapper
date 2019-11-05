@@ -223,6 +223,8 @@ class Hooks:
             if result == 'n':
                 return False
         setting.settings.custom['file_map'] = file_map
+        print('s', setting.settings.custom)
+        exit(1)
         setting.value = options
         return True
 
