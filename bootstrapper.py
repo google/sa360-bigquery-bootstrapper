@@ -1,22 +1,21 @@
-from enum import Enum
+from datetime import datetime
 
+import dateutil
 from absl import app
 from google.api_core.exceptions import BadRequest
 from google.api_core.exceptions import Conflict
-from google.api_core.exceptions import InvalidArgument
 from google.api_core.exceptions import NotFound
+from google.cloud.bigquery_v2.proto.standard_sql_pb2 import StandardSqlDataType
 from google.cloud import bigquery
-from google.cloud.bigquery import Table
-from google.cloud.bigquery_datatransfer_v1 import types
 from google.cloud import bigquery_datatransfer
+from google.cloud import storage
+from google.cloud.bigquery.dataset import Dataset
 from google.protobuf.struct_pb2 import Struct
 from termcolor import cprint
-from datetime import datetime
 
 import app_flags
 from flagmaker import AbstractSettings
 from flagmaker import Config
-from google.cloud.bigquery.dataset import Dataset
 
 
 class Datasets:
@@ -103,12 +102,44 @@ class Bootstrap:
         )
         return result
 
+    def guess_schema(self, file):
+        s_cli = self.settings.custom['storage_client']   # type: storage.Client
+        bucket = s_cli.get_bucket(self.settings['storage_bucket'])
+        blob = bucket.blob(file)
+        result = blob.download_as_string(s_cli, 0, 1000)
+        data = result.split('\n')[0:2]
+        schema = []
+        for col in range(len(data[0])):
+            val = data[1][col]
+            key = data[0][col]
+            if val.isnumeric() and len(val) < 5:
+                schema.append(bigquery.SchemaField(
+                    key,
+                    StandardSqlDataType.INT64
+                ))
+            else:
+                try:
+                    dateutil.parser.parse(val)
+                    schema.append(bigquery.SchemaField(
+                        key,
+                        StandardSqlDataType.DATE
+                    ))
+                except ValueError:
+                    schema.append(bigquery.SchemaField(
+                        key,
+                        StandardSqlDataType.STRING
+                    ))
+        return schema
+
     def load_historical_tables(self, client, project, advertiser):
         if advertiser not in self.settings.custom['file_map']:
             cprint('No historical file provided for {}'.format(advertiser),
                    'red')
             return
-        file = self.settings.custom['file_map'][advertiser]
+        file = 'gs://{}/{}'.format(
+            self.settings['storage_bucket'],
+            self.settings.custom['file_map'][advertiser]
+        )
         dataset = self.settings['raw_dataset']
         table_name = '{}.{}.{}_{}'.format(
             project,
@@ -116,12 +147,12 @@ class Bootstrap:
             self.settings['historical_table_name'],
             advertiser
         )
-        table = bigquery.Table(table_name, dataset)
+        schema = self.guess_schema(file)
+        table = bigquery.Table(table_name, dataset, schema=schema)
         external_config = bigquery.ExternalConfig(
             bigquery.ExternalSourceFormat.CSV
         )
         external_config.source_uris = [
-            'gs://{}/{}'.format(self.settings['storage_bucket'], file)
         ]
         table.external_data_configuration = external_config
         try:

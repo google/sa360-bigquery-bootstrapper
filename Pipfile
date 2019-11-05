@@ -13,6 +13,7 @@ google-cloud-storage = "*"
 typing = "*"
 pipenv = "*"
 termcolor = "*"
+python-dateutil = "*"
 
 [requires]
 python_version = "3"

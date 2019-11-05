@@ -85,7 +85,7 @@ class Hooks:
 
     def set_clients(self, setting: SettingOption):
         settings = setting.settings
-        self.storage = storage.Client(
+        settings.custom['storage_client'] = self.storage = storage.Client(
             project=settings['gcp_project_name'].value
         )
 
