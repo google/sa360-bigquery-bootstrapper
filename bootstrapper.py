@@ -445,18 +445,6 @@ class CreateViews:
         INNER JOIN `{project}.{views}.{keyword_mapper}` m
           ON m.keywordId = d.keywordId
         LEFT JOIN (
-          SELECT 
-            date, 
-            keywordId, 
-            SUM(dfaRevenue) revenue,
-            SUM(dfaTransactions) conversions
-          FROM `{project}.{raw_data}.KeywordFloodlightAndDeviceStats_{advertiser}`
-          GROUP BY date, keywordId
-        ) c 
-            ON c.keywordId=d.keywordId 
-            AND c.date=d.date 
-            AND c.date > MAX(h.date)
-        LEFT JOIN (
           SELECT
             date,
             keywordId{deviceSegment},
@@ -469,6 +457,22 @@ class CreateViews:
         ) h 
             ON h.keywordId=d.keywordId 
             AND h.date=d.date
+        LEFT JOIN (
+          SELECT 
+            date, 
+            keywordId, 
+            SUM(dfaRevenue) revenue,
+            SUM(dfaTransactions) conversions
+          FROM 
+            `{project}.{raw_data}.KeywordFloodlightAndDeviceStats_{advertiser}`
+          GROUP BY date, keywordId
+        ) c 
+            ON c.keywordId=d.keywordId 
+            AND c.date=d.date 
+            AND c.date > (
+                SELECT MAX(date) 
+                FROM `{project}.{raw_data}.{historical_conversions}`
+            )
         GROUP BY
             d.date, 
             m.keywordId, 
