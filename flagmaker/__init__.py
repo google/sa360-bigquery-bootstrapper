@@ -52,11 +52,11 @@ class AbstractSettings(SettingsInterface):
                         setting.set_value(init=setting.default)
                         continue
                     if first:
-                        cprint('Interactive Setup', attrs=['bold'])
+                        cprint('Interactive Setup', attrs=['bold', 'underline'])
+                        print('===============================')
                         first = False
                     if not header_shown:
-                        cprint(block.name, attrs=['bold'])
-                        print('=============================')
+                        cprint(block.name, attrs=['underline'])
                         header_shown = True
                     if setting.include_in_interactive:
                         setting.set_value(prompt=setting.get_prompt(k))
