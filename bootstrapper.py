@@ -105,7 +105,7 @@ class Bootstrap:
     def guess_schema(self, file):
         s_cli = self.settings.custom['storage_client']  # type: storage.Client
         bucket = s_cli.get_bucket(self.settings['storage_bucket'].value)
-        blob = bucket.blob(blob_name=file)
+        blob = bucket.blob(file)
         blob.name = file
         result = blob.download_as_string(s_cli, 0, 1000)
         rows = result.decode().split('\n')[0:2]
@@ -134,11 +134,13 @@ class Bootstrap:
         return schema
 
     def load_historical_tables(self, client, project, advertiser):
-        if advertiser not in self.settings.custom['file_map']:
+        map_ = self.settings.custom['file_map']
+        in_map = advertiser not in map
+        if not in_map or not map[advertiser]:
             cprint('No historical file provided for {}'.format(advertiser),
                    'red')
             return
-        file = self.settings.custom['file_map'][advertiser]
+        file = map[advertiser]
         dataset = self.settings['raw_dataset']
         table_name = '{}.{}.{}_{}'.format(
             project,
@@ -157,6 +159,7 @@ class Bootstrap:
                 file,
             )
         ]
+        print(external_config.source_uris)
         table.external_data_configuration = external_config
         try:
             client.create_table(table)
