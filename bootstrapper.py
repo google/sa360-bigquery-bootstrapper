@@ -143,12 +143,13 @@ class Bootstrap:
         file = file_map[advertiser]
         dataset = self.settings['raw_dataset'].value
         dataset_ref: bigquery.dataset.Dataset = client.get_dataset(dataset)
-        table_name = self.settings['historical_table_name'].value
-        full_table_name = '{}.{}.{}_{}'.format(
+        table_name = '{}_{}'.format(
+            self.settings['historical_table_name'].value, advertiser
+        )
+        full_table_name = '{}.{}.{}'.format(
             project,
             dataset,
             table_name,
-            advertiser
         )
         uri = 'gs://{}/{}'.format(self.settings['storage_bucket'], file)
 
