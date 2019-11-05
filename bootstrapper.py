@@ -123,7 +123,15 @@ class Bootstrap:
         table.external_data_configuration = external_config
         try:
             client.create_table(table)
+            cprint(
+                'Created table {}'.format(table_name),
+                'green'
+            )
         except Conflict:
+            cprint(
+                'Table {} already exists. Skipping'.format(table_name),
+                'red'
+            )
             pass
 
     @staticmethod
