@@ -146,7 +146,7 @@ class Bootstrap:
         table_name = '{}.{}.{}_{}'.format(
             project,
             dataset,
-            self.settings['historical_table_name'],
+            self.settings['historical_table_name'].value,
             advertiser
         )
         uri = 'gs://{}/{}'.format(self.settings['storage_bucket'], file)
