@@ -1,6 +1,7 @@
 import csv
 from datetime import datetime
 
+from absl import logging
 from dateutil.parser import parse as parse_date
 from absl import app
 from google.api_core.exceptions import BadRequest
@@ -228,12 +229,12 @@ class CreateViews:
             adv_view = view_name + '_' + adv
             view_ref = Datasets.views.table(adv_view)
             view = bigquery.Table(view_ref)
-            print(adv, view_name)
-            view.view_query = getattr(
+            logging.debug(adv, view_name)
+            view_query = getattr(
                 self,
                 func_name if func_name is not None else view_name
             )(adv)
-            print(view.view_query)
+            logging.debug(view.view_query)
             self.client.create_table(view, exists_ok=True)
             cprint('+ {}'.format(adv_view), 'green')
             self.keyword_mapper(adv)
@@ -248,7 +249,7 @@ class CreateViews:
             h.{adgroup_column_name} AdGroup,
             {conversions} conversions,
             {revenue} revenue
-          FROM `{project}.{raw}.{historical_table_name}` h
+          FROM `{project}`.`{raw}`.`{historical_table_name}` h
           INNER JOIN (
             SELECT keywordId,
                 keyword,
@@ -256,7 +257,7 @@ class CreateViews:
                 keywordMatchType,
                 adGroup,
                 account
-            FROM `{project}.{views}.{keyword_mapper}`
+            FROM `{project}`.`{views}`.`{keyword_mapper}`
             GROUP BY
                 keywordId,
                 keyword,
@@ -334,21 +335,21 @@ class CreateViews:
                     ORDER BY CASE WHEN status='Active' THEN 0 ELSE 1 END,
                     CASE WHEN keywordEngineId IS NOT NULL THEN 0 ELSE 1 END
                   ) rank
-              FROM `{project}.{raw_data}.Keyword_{advertiser_id}` c
+              FROM `{project}`.`{raw_data}`.`Keyword_{advertiser_id}` c
             ) k
             INNER JOIN (
               SELECT campaignId, campaign 
-              FROM `{project}.{raw_data}.Campaign_{advertiser_id}` 
+              FROM `{project}`.`{raw_data}`.`Campaign_{advertiser_id}` 
               GROUP BY campaignId, campaign
               ) c ON c.campaignId = k.campaignId
             INNER JOIN (
               SELECT accountId, account, accountType 
-              FROM `{project}.{raw_data}.Account_{advertiser_id}` 
+              FROM `{project}`.`{raw_data}`.`Account_{advertiser_id}` 
               GROUP BY accountId, account, accountType
               ) a ON a.accountId = k.accountId
             INNER JOIN (
               SELECT adGroupId, adGroup
-              FROM `{project}.{raw_data}.AdGroup_{advertiser_id}`
+              FROM `{project}`.`{raw_data}`.`AdGroup_{advertiser_id}`
               GROUP BY adGroupId, adGroup
             ) g ON g.adGroupId = k.adGroupId
             WHERE keywordText IS NOT NULL

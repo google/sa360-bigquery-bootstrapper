@@ -53,7 +53,10 @@ class AbstractSettings(SettingsInterface):
                         continue
                     if first:
                         cprint('Interactive Setup', attrs=['bold', 'underline'])
-                        print('===============================')
+                        cprint(
+                            '===============================',
+                            attrs=['bold'],
+                        )
                         first = False
                     if not header_shown:
                         cprint(block.name, attrs=['underline'])

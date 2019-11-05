@@ -163,6 +163,6 @@ class SettingBlock:
 
     def get(self):
         cprint('{}'.format(self.name), None, attrs=['bold'])
-        print('==========================')
+        cprint('==========================', attrs=['bold'])
 
 
