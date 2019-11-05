@@ -274,6 +274,7 @@ class CreateViews:
                 self,
                 func_name if func_name is not None else view_name.value
             )(adv)
+            logging.debug(view_query)
             try:
                 logging.debug(view_ref)
                 view: Table = self.client.get_table(view_ref)
