@@ -105,10 +105,6 @@ class Bootstrap:
         return result
 
     def guess_schema(self, file):
-        if file.startswith('gs://'):
-            file = file.replace('gs://{}/'.format(
-                self.s.unwrap('storage_bucket')), ''
-            )
         s_cli = self.settings.custom['storage_client']  # type: storage.Client
         bucket = s_cli.get_bucket(self.s.unwrap('storage_bucket'))
         blob = bucket.blob(file)
@@ -151,6 +147,10 @@ class Bootstrap:
                    'red')
             return
         file = file_map[advertiser]
+        if file.startswith('gs://'):
+            file = file.replace('gs://{}/'.format(
+                self.s.unwrap('storage_bucket')), ''
+            )
         dataset_ref: bigquery.dataset.Dataset = Datasets.raw
         dataset: str = dataset_ref.dataset_id
         table_name = 'historical_{}'.format(advertiser)
