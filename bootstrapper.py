@@ -35,7 +35,7 @@ from termcolor import cprint
 import app_flags
 from utilities import *
 from flagmaker import AbstractSettings
-from flagmaker import Config
+from flagmaker.settings import Config
 
 
 class DataSets:
@@ -259,7 +259,8 @@ class CreateViews:
 
     def view(self, view_name: ViewTypes, func_name):
         for adv in self.s.unwrap('advertiser_id'):
-            adv_view = view_name.value + '_' + adv
+            logging.info(view_name.value)
+            adv_view = create_view(view_name, adv)
             view_ref = DataSets.views.table(adv_view)
             view = bigquery.Table(view_ref)
             logging.debug(adv, view_name)

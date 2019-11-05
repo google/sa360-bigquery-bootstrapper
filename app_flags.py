@@ -23,12 +23,11 @@ from google.cloud import storage
 from termcolor import cprint
 import os
 
-from flagmaker import AbstractSettings
-from flagmaker import SettingOption
-from flagmaker.settings import SettingBlock
+from flagmaker import settings
 from typing import List
 
-class AppSettings(AbstractSettings):
+
+class AppSettings(settings.AbstractSettings):
     """Settings for the BQ bootstrapper
 
     Add all flags under settings()
@@ -37,36 +36,36 @@ class AppSettings(AbstractSettings):
     def __init__(self):
         self.hooks = Hooks()
 
-    def settings(self) -> List[SettingBlock]:
+    def settings(self) -> List[settings.SettingBlock]:
         args = [
-            SettingBlock('General Settings', {
-                'gcp_project_name': SettingOption.create(
+            settings.SettingBlock('General Settings', {
+                'gcp_project_name': settings.SettingOption.create(
                     self,
                     'GCP Project Name',
                     after=self.hooks.set_clients,
                 ),
-                'raw_dataset': SettingOption.create(
+                'raw_dataset': settings.SettingOption.create(
                     self,
                     'Dataset where raw data will be stored',
                     default='raw'
                 ),
-                'view_dataset': SettingOption.create(
+                'view_dataset': settings.SettingOption.create(
                     self,
                     'Dataset where view data will be generated and stored',
                     default='views'
                 ),
-                'location': SettingOption.create(
+                'location': settings.SettingOption.create(
                     self,
                     'Cloud Location (2 letter country code)',
                     default='US'
                 ),
-                'agency_id': SettingOption.create(self, 'SA360 Agency ID'),
-                'advertiser_id': SettingOption.create(
+                'agency_id': settings.SettingOption.create(self, 'SA360 Agency ID'),
+                'advertiser_id': settings.SettingOption.create(
                     self,
                     'SA360 Advertiser IDs',
                     method=flags.DEFINE_list,
                 ),
-                'has_historical_data': SettingOption.create(
+                'has_historical_data': settings.SettingOption.create(
                     self,
                     'Include Historical Data?\n'
                     'Note: This will be true as long as any advertisers '
@@ -76,13 +75,13 @@ class AppSettings(AbstractSettings):
                     'upload individual advertisers.',
                     method=flags.DEFINE_boolean,
                 ),
-                'storage_bucket': SettingOption.create(
+                'storage_bucket': settings.SettingOption.create(
                     self,
                     'Storage Bucket Name',
                     prompt=self.hooks.bucket_options,
                     after=self.hooks.create_bucket,
                 ),
-                'file_path': SettingOption.create(
+                'file_path': settings.SettingOption.create(
                     self,
                     'Historical Data CSV File Path',
                     after=self.hooks.handle_csv_paths,
@@ -91,33 +90,33 @@ class AppSettings(AbstractSettings):
                     conditional=lambda s: s['has_historical_data'].value,
                 ),
             }),
-            SettingBlock('Historical Columns', {
-                'account_column_name': SettingOption.create(
+            settings.SettingBlock('Historical Columns', {
+                'account_column_name': settings.SettingOption.create(
                     self,
                     'Column name for the Account Name',
                     default='account_name',
                     after=self.hooks.map_historical_column,
                 ),
-                'campaign_column_name': SettingOption.create(
+                'campaign_column_name': settings.SettingOption.create(
                     self,
                     'Campaign Column Name for Historical Data '
                     '(only if including historical data)',
                     default='campaign_name',
                     after=self.hooks.map_historical_column,
                 ),
-                'conversion_count_column': SettingOption.create(
+                'conversion_count_column': settings.SettingOption.create(
                     self,
                     'Specify the conversion column',
                     default='conversions',
                     after=self.hooks.map_historical_column,
                 ),
-                'has_revenue_column': SettingOption.create(
+                'has_revenue_column': settings.SettingOption.create(
                     self,
                     'Does the report show revenue?',
                     default=True,
                     method=flags.DEFINE_bool,
                 ),
-                'revenue_column_name': SettingOption.create(
+                'revenue_column_name': settings.SettingOption.create(
                     self,
                     'Column name for revenue gained from conversion(s)\n '
                     'If left blank, then no revenue will be recorded.\n'
@@ -127,20 +126,20 @@ class AppSettings(AbstractSettings):
                     conditional=lambda s: s['has_revenue_column'].value,
                     after=self.hooks.map_historical_column,
                 ),
-                'has_device_segment': SettingOption.create(
+                'has_device_segment': settings.SettingOption.create(
                     self,
                     'Does the report have a device segment column?',
                     default=True,
                     method=flags.DEFINE_bool,
                 ),
-                'device_segment_column_name': SettingOption.create(
+                'device_segment_column_name': settings.SettingOption.create(
                     self,
                     'Device Segment Column Name (if there is none, omit)',
                     default='device_segment',
                     conditional=lambda s: s['has_device_segment'].value,
                     after=self.hooks.map_historical_column,
                 ),
-                'report_level': SettingOption.create(
+                'report_level': settings.SettingOption.create(
                     self,
                     'Specify the report level of the '
                     'advertisers being uploaded.',
@@ -149,20 +148,20 @@ class AppSettings(AbstractSettings):
                         choices=['conversion','keyword','campaign']
                     ),
                 ),
-                'date_column_name': SettingOption.create(
+                'date_column_name': settings.SettingOption.create(
                     self,
                     'Column name for the Date Value',
                     default='date',
                     after=self.hooks.map_historical_column,
                 ),
-                'adgroup_column_name': SettingOption.create(
+                'adgroup_column_name': settings.SettingOption.create(
                     self,
                     'Column name for the ad group name',
                     default='ad_group_name',
                     conditional=lambda s: s['report_level'].value != 'campaign',
                     after=self.hooks.map_historical_column,
                 ),
-                'keyword_match_type': SettingOption.create(
+                'keyword_match_type': settings.SettingOption.create(
                     self,
                     'Keyword Match Type Column [EXACT/PHRASE/BROAD etc.] '
                     '(omit if uploading a campaign-level report)',
@@ -191,14 +190,14 @@ class Hooks:
     def __init__(self):
         self.storage = None
 
-    def set_clients(self, setting: SettingOption):
+    def set_clients(self, setting: settings.SettingOption):
         settings = setting.settings
         settings.custom['storage_client'] = self.storage = storage.Client(
             project=settings['gcp_project_name'].value
         )
         return True
 
-    def create_bucket(self, setting: SettingOption) -> bool:
+    def create_bucket(self, setting: settings.SettingOption) -> bool:
         class ChooseAnother:
             toggle = False
         settings = setting.settings
@@ -254,7 +253,7 @@ class Hooks:
                     'Press Ctrl+C to cancel or choose a different input: '
                 )
 
-    def bucket_options(self, setting: SettingOption):
+    def bucket_options(self, setting: settings.SettingOption):
         settings = setting.settings
         buckets = settings.custom['buckets'] = list(self.storage.list_buckets())
         bucket_size = len(buckets)
@@ -263,7 +262,7 @@ class Hooks:
         result += '\nc: Create New Bucket'
         return result
 
-    def get_file_paths(self, setting: SettingOption):
+    def get_file_paths(self, setting: settings.SettingOption):
         settings = setting.settings
         advertisers = settings['advertiser_id'].value
 
@@ -278,7 +277,7 @@ class Hooks:
                 ' each advertiser ID\n'
                 '2. Enter each value separately?\n')
 
-    def handle_csv_paths(self, setting: SettingOption):
+    def handle_csv_paths(self, setting: settings.SettingOption):
         choice = setting.value
         advertisers = setting.settings['advertiser_id'].value
         if isinstance(choice, list):
@@ -339,7 +338,7 @@ class Hooks:
         setting.value = options
         return True
 
-    def ensure_utf8(self, setting: SettingOption, filename: str):
+    def ensure_utf8(self, setting: settings.SettingOption, filename: str):
         settings = setting.settings
         bucket_name = settings['storage_bucket'].value
         bucket = None
@@ -389,7 +388,7 @@ class Hooks:
                 continue
         return True
 
-    def map_historical_column(self, setting: SettingOption):
+    def map_historical_column(self, setting: settings.SettingOption):
         settings = setting.settings
         setting.value = setting.value.replace(' ', '_')
         if 'historical_map' not in settings.custom:

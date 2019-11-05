@@ -59,9 +59,9 @@ class SettingUtil(object):
 
 class ViewTypes(Enum):
     HISTORICAL = 'Historical'
-    KEYWORD_MAPPER = 'KeywordMapper',
-    HISTORICAL_CONVERSIONS = 'HistoricalConversions',
-    REPORT_VIEW = 'ReportView',
+    KEYWORD_MAPPER = 'KeywordMapper'
+    HISTORICAL_CONVERSIONS = 'HistoricalConversions'
+    REPORT_VIEW = 'ReportView'
 
 
 class ViewGetter(object):
@@ -70,3 +70,7 @@ class ViewGetter(object):
 
     def get(self, type: ViewTypes):
         return '{}_{}'.format(type.value, self.advertiser)
+
+
+def create_view(view_type: ViewTypes, advertiser: str):
+    return view_type.value + '_' + advertiser

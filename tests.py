@@ -17,36 +17,22 @@
 # products and are not formally supported.
 # ************************************************************************/
 from absl import flags
+import unittest
 
 import flagmaker.settings
 import app_flags
-
-settings = app_flags.AppSettings()
-test = flagmaker.settings.SettingOption.create(settings, "Hint")
-test.value = "Test"
-
-assert(test[0].isalnum())
-assert(test[-1].isalnum())
-assert(test[0] == "T")
-assert(test[-1] == "t")
+from flagmaker.tests import TestSettings
+from utilities import ViewTypes
+from utilities import create_view
 
 
-def test_bool(value, check):
-    boolean = flagmaker.settings.SettingOption.create(settings,
-                                                      "Hint",
-                                                      method=flags.DEFINE_bool)
+class UtilitiesTest(unittest.TestCase):
+    def test_types(self):
+        self.assertEqual(
+            create_view(ViewTypes.KEYWORD_MAPPER, '123'),
+            'KeywordMapper_123'
+        )
 
 
-    boolean.set_value(value=value)
-    assert(boolean.value == check)
-
-test_bool('true', True)
-test_bool('1', True)
-test_bool(True, True)
-test_bool('True', True)
-
-test_bool('false', False)
-test_bool('0', False)
-test_bool(False, False)
-test_bool('False', False)
-
+if __name__ == '__main__':
+    unittest.main()
