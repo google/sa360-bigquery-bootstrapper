@@ -6,7 +6,6 @@ from absl import app
 from google.api_core.exceptions import BadRequest
 from google.api_core.exceptions import Conflict
 from google.api_core.exceptions import NotFound
-from google.cloud.bigquery_v2.proto.standard_sql_pb2 import StandardSqlDataType
 from google.cloud import bigquery
 from google.cloud import bigquery_datatransfer
 from google.cloud import storage
@@ -117,19 +116,19 @@ class Bootstrap:
             if val.isnumeric() and len(val) < 5:
                 schema.append(bigquery.SchemaField(
                     key,
-                    StandardSqlDataType.INT64
+                    'INT64',
                 ))
             else:
                 try:
                     parse_date(val)
                     schema.append(bigquery.SchemaField(
                         key,
-                        StandardSqlDataType.DATE
+                        'DATE',
                     ))
                 except ValueError:
                     schema.append(bigquery.SchemaField(
                         key,
-                        StandardSqlDataType.STRING
+                        'STRING',
                     ))
         return schema
 
