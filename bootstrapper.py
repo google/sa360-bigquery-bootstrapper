@@ -474,7 +474,6 @@ class CreateViews:
             raw_data=self.s.unwrap('raw_dataset'),
             advertiser=advertiser,
             historical_conversions=views.get(ViewTypes.HISTORICAL_CONVERSIONS),
-            switchover_date=self.s.unwrap('switchover_date'),
         )
         return sql
 
