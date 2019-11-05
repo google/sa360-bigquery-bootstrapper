@@ -81,7 +81,7 @@ class SettingOption(SettingOptionInterface):
         self._value.set_val(value)
         # perform actions
 
-        if self.called is None:
+        if self.after is None:
             self._error = False
             return
 
