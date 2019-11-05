@@ -148,7 +148,7 @@ class Bootstrap:
             advertiser
         )
         schema = self.guess_schema(file)
-        table = bigquery.Table(table_name, dataset, schema=schema)
+        table = bigquery.Table(table_name, schema=schema)
         external_config = bigquery.ExternalConfig(
             bigquery.ExternalSourceFormat.CSV
         )
