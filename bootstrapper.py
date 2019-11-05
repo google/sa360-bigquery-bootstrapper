@@ -141,7 +141,7 @@ class Bootstrap:
                    'red')
             return
         file = file_map[advertiser]
-        dataset = self.settings['raw_dataset']
+        dataset = self.settings['raw_dataset'].value
         dataset_ref: bigquery.dataset.Dataset = client.get_dataset(dataset)
         table_name = '{}.{}.{}_{}'.format(
             project,
