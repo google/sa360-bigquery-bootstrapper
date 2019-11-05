@@ -185,6 +185,13 @@ class Bootstrap:
         job_config.skip_leading_rows = 1
         job_config.source_format = bigquery.ExternalSourceFormat.CSV
         try:
+            # if the table exists - then skip this part.
+            client.get_table(full_table_name)
+            cprint('Table {} exists. Skipping'.format(full_table_name), 'red')
+        except NotFound as err:
+            pass
+
+        try:
             load_job = client.load_table_from_uri(
                 uri, dataset_ref.table(table_name), job_config=job_config
             )
