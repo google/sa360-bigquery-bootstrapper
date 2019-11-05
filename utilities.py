@@ -9,9 +9,9 @@ def normalize(content):
 
 def aggregate_if(type, prefix, value, value_empty_alt):
   type_str = ''
-  if type == SUM:
+  if type == Aggregation.SUM:
     type_str = 'SUM'
-  if type == COUNT:
+  if type == Aggregation.COUNT:
     type_str = 'COUNT'
   return ("{0}({1}.{2})".format(type_str, prefix, value)
         if value

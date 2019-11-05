@@ -373,6 +373,8 @@ class Hooks:
 
     def map_historical_column(self, setting: SettingOption):
         settings = setting.settings
+        setting.value = setting.value.replace(' ', '_')
+        print('tttttt', setting.value)
         if 'historical_map' not in settings.custom:
             settings.custom['historical_map'] = {}
         settings.custom['historical_map'][setting.value] = setting.default
