@@ -443,7 +443,7 @@ class CreateViews:
             date, 
             keywordId{deviceSegment}
         ) d
-        INNER JOIN `{project}.{views}.{keyword_mapper}` m
+        INNER JOIN `{project}.{view_data}.{keyword_mapper}` m
           ON m.keywordId = d.keywordId
         LEFT JOIN (
           SELECT
