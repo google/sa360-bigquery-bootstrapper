@@ -72,5 +72,5 @@ class ViewGetter(object):
         return '{}_{}'.format(type.value, self.advertiser)
 
 
-def create_view(view_type: ViewTypes, advertiser: str):
+def get_view_name(view_type: ViewTypes, advertiser: str):
     return view_type.value + '_' + advertiser

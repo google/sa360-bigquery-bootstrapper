@@ -260,7 +260,7 @@ class CreateViews:
     def view(self, view_name: ViewTypes, func_name):
         for adv in self.s.unwrap('advertiser_id'):
             logging.info(view_name.value)
-            adv_view = create_view(view_name, adv)
+            adv_view = get_view_name(view_name, adv)
             view_ref = DataSets.views.table(adv_view)
             view = bigquery.Table(view_ref)
             logging.debug(adv, view_name)
@@ -269,7 +269,7 @@ class CreateViews:
                 func_name if func_name is not None else view_name.value
             )(adv)
             logging.debug(view.view_query)
-            self.client.get_table(view_name.value)
+            self.client.get_table(adv_view)
             try:
                 self.client.create_table(view)
                 cprint('+ created {}'.format(adv_view), 'green')

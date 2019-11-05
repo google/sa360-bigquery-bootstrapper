@@ -23,13 +23,13 @@ import flagmaker.settings
 import app_flags
 from flagmaker.tests import TestSettings
 from utilities import ViewTypes
-from utilities import create_view
+from utilities import get_view_name
 
 
 class UtilitiesTest(unittest.TestCase):
     def test_types(self):
         self.assertEqual(
-            create_view(ViewTypes.KEYWORD_MAPPER, '123'),
+            get_view_name(ViewTypes.KEYWORD_MAPPER, '123'),
             'KeywordMapper_123'
         )
 
