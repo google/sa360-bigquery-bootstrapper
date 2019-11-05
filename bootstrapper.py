@@ -143,10 +143,11 @@ class Bootstrap:
         file = file_map[advertiser]
         dataset = self.settings['raw_dataset'].value
         dataset_ref: bigquery.dataset.Dataset = client.get_dataset(dataset)
-        table_name = '{}.{}.{}_{}'.format(
+        table_name = self.settings['historical_table_name'].value
+        full_table_name = '{}.{}.{}_{}'.format(
             project,
             dataset,
-            self.settings['historical_table_name'].value,
+            table_name,
             advertiser
         )
         uri = 'gs://{}/{}'.format(self.settings['storage_bucket'], file)
@@ -161,12 +162,12 @@ class Bootstrap:
         try:
             load_job.result()
             cprint(
-                'Created table {}'.format(table_name),
+                'Created table {}'.format(full_table_name),
                 'green'
             )
         except Conflict:
             cprint(
-                'Table {} already exists. Skipping'.format(table_name),
+                'Table {} already exists. Skipping'.format(full_table_name),
                 'red'
             )
             pass
