@@ -105,6 +105,8 @@ class Bootstrap:
     def guess_schema(self, file):
         s_cli = self.settings.custom['storage_client']  # type: storage.Client
         bucket = s_cli.get_bucket(self.settings['storage_bucket'].value)
+        print(file)
+        exit(1)
         blob = bucket.blob(file)
         result = blob.download_as_string(s_cli, 0, 1000)
         rows = result.decode().split('\n')[0:2]
