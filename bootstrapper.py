@@ -275,7 +275,7 @@ class CreateViews:
                 ))
                 view.view_query = view_query
                 cprint('= updated {}'.format(adv_view), 'green')
-            except KeyError:
+            except NotFound:
                 view = bigquery.Table(view_ref)
                 logging.debug(adv, view_name)
                 logging.debug(view.view_query)
