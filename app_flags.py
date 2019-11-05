@@ -50,7 +50,12 @@ class AppSettings(AbstractSettings):
                 ),
                 'has_historical_data': SettingOption.create(
                     self,
-                    'Include Historical Data?',
+                    'Include Historical Data?\n'
+                    'Note: This will be true as long as any advertisers '
+                    'are going to have historical data included. If you are '
+                    'uploading multiple advertisers, any of them with '
+                    'historical data should have the same format. If not, '
+                    'upload individual advertisers.',
                     method=flags.DEFINE_boolean,
                 ),
                 'storage_bucket': SettingOption.create(
@@ -59,18 +64,13 @@ class AppSettings(AbstractSettings):
                     prompt=self.hooks.bucket_options,
                     after=self.hooks.create_bucket,
                 ),
-                'historical_table_name': SettingOption.create(
-                    self,
-                    'Name of historical table (suffix will be advertiser ID)',
-                    default='historical',
-                    conditional=lambda: args['has_historical_data'].value,
-                ),
                 'file_path': SettingOption.create(
                     self,
                     'Historical Data CSV File Path',
                     after=self.hooks.handle_csv_paths,
                     method=flags.DEFINE_list,
                     prompt=self.hooks.get_file_paths,
+                    conditional=lambda s: s['has_historical_data'].value,
                 ),
             }),
             SettingBlock('Historical Columns', {
@@ -149,6 +149,7 @@ class AppSettings(AbstractSettings):
             kwargs['enum_values'] = choices
             return flags.DEFINE_enum(*args, **kwargs)
         return inner
+
 
 class Hooks:
     """Convenience class to add all hooks

@@ -145,9 +145,7 @@ class Bootstrap:
         file = file_map[advertiser]
         dataset_ref: bigquery.dataset.Dataset = Datasets.raw
         dataset: str = dataset_ref.dataset_id
-        table_name = '{}_{}'.format(
-            self.s.unwrap('historical_table_name'), advertiser
-        )
+        table_name = 'historical_{}'.format(advertiser)
         full_table_name = '{}.{}.{}'.format(
             project,
             dataset,
@@ -189,6 +187,7 @@ class Bootstrap:
 class SystemSettings(object):
     SERVICE_NAME = 'doubleclick_search'
 
+
 class CreateViews:
     client: bigquery.Client = None
     project: str = None
@@ -203,9 +202,13 @@ class CreateViews:
         self.s = SettingUtil(config)
 
     def run(self):
-        self.view('keyword_mapper')
-        if self.s.unwrap('has_historical_view'):
-            self.view(self.s.unwrap('historical_table_name'), 'historical')
+        report_level = self.s.unwrap('report_level')
+        if report_level == 'campaign':
+            self.view('campaign')  # not created yet
+        else:
+            if self.s.unwrap('has_historical_view'):
+                self.view('keyword_mapper')
+                self.view('historical_keywords')
 
     def view(self, view_name, func_name=None):
         for adv in self.s.unwrap('advertiser_id'):
@@ -218,16 +221,11 @@ class CreateViews:
                 adv,
             )
             self.client.create_table(view, exists_ok=True)
-            cprint('+ Created view {}'.format(adv_view), 'green')
+            cprint('+ {}'.format(adv_view), 'green')
+            self.keyword_mapper(adv)
 
-    def historical(self, advertiser):
-        #@title Historical Keyword Conversion View
-        #@markdown Run this if you are getting historical data from a 3rd party platform \
-        #@markdown \
-        #@markdown **NOTE:** Change the columns below to match your report.
-
-
-        #@markdown ### View Name
+    def historical_keywords(self, advertiser):
+        views = ViewGetter(advertiser)
 
         sql = """SELECT 
             h.{date} date,
@@ -280,8 +278,8 @@ class CreateViews:
               raw=self.s.unwrap('raw_dataset'),
               adgroup_column_name=self.s.unwrap('adgroup_column_name'),
               views=self.s.unwrap('view_dataset'),
-              historical_table_name=self.s.unwrap('historical_table_name'),
-              keyword_mapper=self.s.unwrap('keyword_mapper_view'),
+              historical_table_name=views.get(ViewTypes.HISTORICAL),
+              keyword_mapper=views.get(ViewTypes.KEYWORD_MAPPER),
               campaign_column_name=self.s.unwrap('campaign_column_name'),
               account_column_name=self.s.unwrap('account_column_name'),
               date_column_name=self.s.unwrap('date_column_name'),
@@ -293,10 +291,13 @@ class CreateViews:
               ),
               revenue=aggregate_if(
                   Aggregation.SUM,
-                  'h', self.s.unwrap('conversion_qualitative_field'),
+                  'h', self.s.unwrap('revenue_column_name'),
                   0
               ),
           )
+        print(sql)
+        return sql
+
 
     def keyword_mapper(self, advertiser):
         sql = """SELECT 
@@ -352,3 +353,5 @@ class CreateViews:
                     raw_data=self.s.unwrap('raw_dataset'),
                     advertiser_id=advertiser,
                 )
+        print(sql)
+        return sql
