@@ -173,7 +173,7 @@ class Bootstrap:
             )
         dataset_ref: bigquery.dataset.Dataset = DataSets.raw
         dataset: str = dataset_ref.dataset_id
-        table_name = 'historical_{}'.format(advertiser)
+        table_name = get_view_name(ViewTypes.HISTORICAL, advertiser)
         full_table_name = '{}.{}.{}'.format(
             project,
             dataset,
