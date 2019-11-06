@@ -76,15 +76,18 @@ class SettingOption(SettingOptionInterface):
         default = ' [{0}]'.format(
             self.default
         ) if self.default is not None else ''
-        prompt = ''
+        prompt_val = ''
         if self.prompt is not None:
-            prompt += '\n'
+            prompt_val += '\n'
             if self.prompt is str:
-                prompt += self.prompt
+                prompt_val += self.prompt
             if callable(self.prompt):
-                prompt += self.prompt(self)
-            prompt += '\nInput'
-        return '{} ({}){}{}: '.format(self.help, k, default, prompt)
+                prompt_result = self.pront(self)
+                if prompt_result is None:
+                    return None
+                prompt_val += prompt_result
+            prompt_val += '\nInput'
+        return '{} ({}){}{}: '.format(self.help, k, default, prompt_val)
 
     @property
     def value(self):
@@ -130,6 +133,10 @@ class SettingOption(SettingOptionInterface):
                 return
 
             if ask != '':
+                if ask is None:
+                    # we intentionally set ask to None. A conditional prompt
+                    # doesn't want this to continue
+                    return
                 val = prompt(ask)
                 if val == '' and self.default is not None:
                     self.value = self.default
