@@ -17,6 +17,7 @@
 # products and are not formally supported.
 # ************************************************************************/
 from absl import flags
+from datetime import datetime
 from dateutil.parser import parse as parse_date
 from google.api_core import exceptions
 from google.api_core.exceptions import NotFound
@@ -404,9 +405,27 @@ class Hooks:
 
     def convert_to_date(self, setting: settings.SettingOption):
         try:
-            value = parse_date(setting.value)
+            location: str = setting.settings['location'].value
+            try:
+                value = datetime.strptime(setting.value, '%Y-%m-%d')
+            except ValueError:
+                kwargs = {}
+                kwargs['dayfirst'] = not location.lower().startswith('us')
+                value = parse_date(setting.value, **kwargs)
+                while True:
+                    result = input(
+                        'Date not in yyyy-mm-dd format. '
+                        'Converted to {}. Correct? [y/n]'.format(
+                            value.strftime('%Y-%m-%d')
+                        )
+                    )
+                    if result == 'n':
+                        return False
+                    if result == 'y':
+                        break
+                    cprint('Invalid option. Select y/n or set value to '
+                           'yyyy-mm-dd. Example: 1999-12-31', 'red')
             setting._error = False
-            
             setting.value = value
             return True
         except ValueError:
