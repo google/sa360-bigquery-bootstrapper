@@ -16,6 +16,9 @@
 # Note that these code samples being shared are not official Google
 # products and are not formally supported.
 # ************************************************************************/
+import os
+import atexit
+
 try:
     import bootstrapper
 except ImportError:
@@ -25,6 +28,9 @@ except ImportError:
 
 from absl import flags
 import flagmaker.settings as settings
+import readline
+
+readline.parse_and_bind('tab:complete')
 
 if __name__ == '__main__':
     bootstrap = bootstrapper.Bootstrap()

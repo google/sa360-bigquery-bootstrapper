@@ -71,10 +71,10 @@ class AppSettings(settings.AbstractSettings):
                     self,
                     'Include Historical Data?\n'
                     'Note: This will be true as long as any advertisers '
-                    'are going to have historical data included. If you are '
+                    'are going to have historical data included.\nIf you are '
                     'uploading multiple advertisers, any of them with '
                     'historical data should have the same format. If not, '
-                    'upload individual advertisers.',
+                    'upload individual advertisers\n Input',
                     method=flags.DEFINE_boolean,
                 ),
                 'storage_bucket': settings.SettingOption.create(
@@ -288,9 +288,10 @@ class Hooks:
     def handle_csv_paths(self, setting: settings.SettingOption):
         choice = setting.value
         advertisers = setting.settings['advertiser_id'].value
+        if not isinstance(advertisers, list):
+            advertisers = [advertisers]
         if isinstance(choice, list):
             file_map = {}
-            print(len(choice), choice)
             for i in range(len(choice)):
                 option = choice[i]
                 advertiser = advertisers[i]
@@ -309,7 +310,9 @@ class Hooks:
                     'Add comma-separated file '
                     'locations\n'
                     'IDs:    {}\n'
-                    'Values: '.format(','.join(advertisers))
+                    'Values: '.format(
+                        ','.join(advertisers)
+                    )
                 ).split(',')
                 break
             elif choice != '2':
