@@ -76,7 +76,7 @@ class AppSettings(settings.AbstractSettings):
                     'are going to have historical data included.\nIf you are '
                     'uploading multiple advertisers, any of them with '
                     'historical data should have the same format. If not, '
-                    'upload individual advertisers\n Input',
+                    'upload individual advertisers\nInput',
                     method=flags.DEFINE_boolean,
                 ),
                 'storage_bucket': settings.SettingOption.create(
@@ -329,7 +329,7 @@ class Hooks:
             for advertiser in advertisers:
                 options.append(prompt(
                     'Advertiser #{}: '.format(advertiser),
-                    completer=PathCompleter(),
+                    completer=PathCompleter(get_paths=os.environ['HOME']),
                 ))
             break
 
