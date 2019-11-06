@@ -478,10 +478,7 @@ class CreateViews:
         ) c 
             ON c.keywordId=d.keywordId 
             AND c.date=d.date 
-            AND c.date > (
-                SELECT MAX(date) 
-                FROM `{project}.{view_data}.{historical_conversions}`
-            )
+            AND c.date > '{date}'
         GROUP BY
             d.date, 
             m.keywordId, 
@@ -496,6 +493,7 @@ class CreateViews:
             project=self.s.unwrap('gcp_project_name'),
             raw_data=self.s.unwrap('raw_dataset'),
             advertiser=advertiser,
+            date=self.s.unwrap('first_date_conversions'),
             historical_conversions=views.get(ViewTypes.HISTORICAL_CONVERSIONS),
         )
         return sql

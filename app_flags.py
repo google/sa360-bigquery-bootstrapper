@@ -404,7 +404,10 @@ class Hooks:
 
     def convert_to_date(self, setting: settings.SettingOption):
         try:
-            setting.value = parse_date(setting.value)
+            value = parse_date(setting.value)
+            setting._error = False
+            
+            setting.value = value
             return True
         except ValueError:
             cprint('Invalid Date Selection. Use either y-m-d or m/d/y', 'red')
