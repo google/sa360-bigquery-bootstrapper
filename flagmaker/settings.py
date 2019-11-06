@@ -82,7 +82,7 @@ class SettingOption(SettingOptionInterface):
             if self.prompt is str:
                 prompt_val += self.prompt
             if callable(self.prompt):
-                prompt_result = self.pront(self)
+                prompt_result = self.prompt(self)
                 if prompt_result is None:
                     return None
                 prompt_val += prompt_result
