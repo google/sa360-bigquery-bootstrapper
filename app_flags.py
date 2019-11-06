@@ -278,7 +278,6 @@ class Hooks:
 
     def get_file_paths(self, setting: settings.SettingOption):
         '''
-
         :param setting: SettingOption object
         :raise FlagMakerPromptInterruption Returns '1' interrupting the prompt
                if there is only one valid answer.
@@ -348,7 +347,7 @@ class Hooks:
             for advertiser in advertisers:
                 options.append(prompt(
                     'Advertiser #{}: '.format(advertiser),
-                    completer=PathCompleter(get_paths=os.environ['HOME']),
+                    completer=PathCompleter(get_paths=paths),
                     file_filter=hide,
                 ))
             break
