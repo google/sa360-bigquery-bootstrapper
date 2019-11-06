@@ -32,3 +32,9 @@ class FlagMakerInputError(BaseFlagMakerException):
 
 class FlagMakerConfigurationError(BaseFlagMakerException):
     pass
+
+
+class FlagMakerPromptInterruption(BaseFlagMakerException):
+    def __init__(self, value, *args):
+        self.value = value
+        super().__init__(*args)

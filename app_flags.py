@@ -32,6 +32,8 @@ import os
 from flagmaker import settings
 from typing import List
 
+from flagmaker.exceptions import FlagMakerPromptInterruption
+
 
 class AppSettings(settings.AbstractSettings):
     """Settings for the BQ bootstrapper
@@ -275,6 +277,13 @@ class Hooks:
         return result
 
     def get_file_paths(self, setting: settings.SettingOption):
+        '''
+
+        :param setting: SettingOption object
+        :raise FlagMakerPromptInterruption Returns '1' interrupting the prompt
+               if there is only one valid answer.
+        :return: Prompt string
+        '''
         settings = setting.settings
         advertisers = settings['advertiser_id'].value
 
@@ -283,13 +292,14 @@ class Hooks:
                'and just specify the file name(s).\n'
                'You can leave any value without historical data'
                'blank.', 'blue')
-
+        if not isinstance(advertisers, list) and len(advertisers) > 1:
+            raise FlagMakerPromptInterruption(value='1')
         return (
             'Do you want to:\n' +
             '1. Enter each value separately?\n'
             '2. Enter comma separated values to map each advertiser ID\n'
             'Choice:'
-        ) if isinstance(advertisers, list) and len(advertisers) > 1 else None
+        )
 
     def handle_csv_paths(self, setting: settings.SettingOption):
         choice = setting.value
