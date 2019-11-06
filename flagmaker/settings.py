@@ -116,12 +116,12 @@ class SettingOption(SettingOptionInterface):
         else:
             self._error = False
 
-    def set_value(self, value: str = '', prompt: str = '', init: str = ''):
+    def set_value(self, value: str = '', ask: str = '', init: str = ''):
         while True:
-            num_opts = int(value != '') + int(prompt != '') + int(init != '')
+            num_opts = int(value != '') + int(ask != '') + int(init != '')
             if num_opts != 1:
                 raise FlagMakerInputError('Need to choose either '
-                                          'init, value or prompt')
+                                          'init, value or ask')
 
             if init is None:
                 return
@@ -129,8 +129,8 @@ class SettingOption(SettingOptionInterface):
                 self.value = init
                 return
 
-            if prompt != '':
-                val = prompt(prompt)
+            if ask != '':
+                val = prompt(ask)
                 if val == '' and self.default is not None:
                     self.value = self.default
                 else:
@@ -233,7 +233,7 @@ class AbstractSettings(SettingsInterface):
                         cprint(block.name, attrs=['underline'])
                         header_shown = True
                     if setting.include_in_interactive:
-                        setting.set_value(prompt=setting.get_prompt(k))
+                        setting.set_value(ask=setting.get_prompt(k))
         return self
 
     def assign_flags(self) -> flags:
@@ -319,7 +319,7 @@ class AbstractSettings(SettingsInterface):
                         cprint(block.name, attrs=['underline'])
                         header_shown = True
                     if setting.include_in_interactive:
-                        setting.set_value(prompt=setting.get_prompt(k))
+                        setting.set_value(ask=setting.get_prompt(k))
         return self
 
     def assign_flags(self) -> flags:
