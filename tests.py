@@ -16,17 +16,23 @@
 # Note that these code samples being shared are not official Google
 # products and are not formally supported.
 # ************************************************************************/
-try:
-    import bootstrapper
-except ImportError:
-    from pip._internal.utils import subprocess
-    subprocess.call_subprocess(['pipenv', 'install'], show_stdout=False)
-    import bootstrapper
-
 from absl import flags
-import flagmaker.settings as settings
+import unittest
+
+import flagmaker.settings
+import app_flags
+from flagmaker.tests import TestSettings
+from utilities import ViewTypes
+from utilities import get_view_name
+
+
+class UtilitiesTest(unittest.TestCase):
+    def test_types(self):
+        self.assertEqual(
+            get_view_name(ViewTypes.KEYWORD_MAPPER, '123'),
+            'KeywordMapper_123'
+        )
+
 
 if __name__ == '__main__':
-    bootstrap = bootstrapper.Bootstrap()
-    flags.adopt_module_key_flags(settings)
-    bootstrap.run()
+    unittest.main()

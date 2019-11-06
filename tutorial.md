@@ -1,15 +1,32 @@
-# Introduction to Writing Tutorials in Cloud Shell
+# SA360 BigQuery Bootstrapper for Merchant Data Warehouse
 
+## Walkthrough
 
-## Let's get started!
+### License
+
+Copyright 2019 Google Inc.
+
+Licensed under the Apache License, Version 2.0 (the 'License');
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an 'AS IS' BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+Note that these code samples being shared are not official Google
+products and are not formally supported.
+
+## Select your cloud project
 
 Select an existing Google Cloud project or create a new one.
 
-<walkthrough-project-setup>Setup</walkthrough-project-setup>
-
-### Enable APIs
-
-<walkthrough-enable-apis apis="bigquery,storage"></walkthrough-enable-apis>
+<walkthrough-project-billing-setup key="project-id">
+</walkthrough-project-billing-setup>
 
 ## Set project ID
 
@@ -21,175 +38,53 @@ Run the following command:
 If you run this command more than once, nothing bad will happen, 
 but you should only have to run it one time.
     
-    pip3 install pipenv --user
-    [[ $(grep -c "$HOME/.local/bin" <(echo $PATH)) == 0 ]] \
-    && echo "PATH=$PATH:$HOME/.local/bin" >> $HOME/.bashrc \
-    && source ~/.bashrc
-    
+    source startup.sh {{project-id}}
     
 ## Run deploy script
 
 Now we will run the deploy script. It will be interactive, so be sure to follow the prompts below.
 
 ```bash
-pipenv run python run.py
+pipenv run python run.py --gcp_project_name={{project-id}} --interactive
 ```
 
 You can copy the above command into the interactive shell below (or click on the **>** icon and then press enter below)
 
 ### Prompts
 
-You will be prompted many questions, including the following:
+You will be prompted to answer many questions.
+To see all prompts and hints you can run the command:
 
+    pipenv run python.py --help
 
-## Opening the editor
+You can also fill in flags using this to avoid the interactive prompts.
 
-You can edit a file stored in Cloud Shell using Cloud Shell’s built-in text editor.
+### Check your columns
 
-*  To start, open the editor by clicking on the <walkthrough-cloud-shell-editor-icon></walkthrough-cloud-shell-editor-icon> icon.
-*  Look at the source file for this tutorial by opening `tutorial.md`.
-*  Try making a change to the file for this tutorial, then saving it using the <walkthrough-editor-spotlight spotlightId="fileMenu">file menu</walkthrough-editor-spotlight>.
+If you're uploading historical data, 
+the easiest approach is to change your column headers.
 
-To restart the tutorial with your changes, run:
-```bash
-cloudshell launch-tutorial -d tutorial.md
-```
+Alternatively, you can fill in the prompts for your file.
 
-Next, you will learn how to format the text in a tutorial.
+*Note*: At the moment, this script only allows one file
+configuration type at a time. If each advertiser you want
+to upload has its own specific file format (or different headers)
+and you can't get the header names to match, then you'll have to
+run this script multiple times.
 
+The script expects the following headers by default:
 
-## Writing in Markdown
+- Account Name: account_name
+- Campaign Name: campaign_name
+- Conversions: conversions
+- Date: date
+- Ad Group: ad_group_name
+- Keyword Match Type: match_type
 
-To write your tutorial, use [Markdown](https://en.wikipedia.org/wiki/Markdown) and follow these guidelines:
+If there is revenue:
+- Revenue Column: revenue
 
-
-### Edit the title
-
-Modify the title of this tutorial ('# Introduction to writing tutorials in Cloud Shell') by changing it to:
-
-```
-# Teach me to write a tutorial
-```
-
-### Add a new step
-
-Next, add a step just after the title like this:
-
-```
-## Step 1
-This is a new step I’ve just added.
-```
-
-Each 'step' of a tutorial is displayed on one page. To move through steps, users use the 'Back' and 'Next' buttons.
-
-
-### Add underlying items to a step
-
-To list items that are part of a tutorial step under a particular step heading, add them as such:
-
-```
-### This is an item under your first step
-```
-
-The tutorial engine also supports Markdown features like links and images. Note, **including HTML is not supported**.
-
-To recap, a **title** is marked with a **level 1** heading, a **step** with a **level 2** heading, and an **item** with a **level 3** heading.
-
-
-### Restart to see changes
-
-To see your changes, restart the tutorial by running:
-```bash
-cloudshell launch-tutorial -d tutorial.md
-```
-
-Next up, adding helpful links and icons to your tutorial.
-
-
-## Special tutorial features
-
-In the Markdown for your tutorial, you may include special directives that are specific to the tutorial engine. These allow you to include helpful shortcuts to actions that you may ask a user to perform.
-
-
-### Trigger file actions in the text editor
-To include a link to <walkthrough-editor-open-file filePath="cloud-shell-tutorials/tutorial.md">open a file for editing</walkthrough-editor-open-file>, use:
-
-```
-<walkthrough-editor-open-file
-    filePath="cloud-shell-tutorials/tutorial.md">
-    open a file for editing
-</walkthrough-editor-open-file>
-```
-
-
-### Highlight a UI element
-
-You can also direct the user’s attention to an element on the screen that you want them to interact with.
-
-You may want to show people where to find the web preview icon to view the web server running in their Cloud Shell virtual machine in a new browser tab.
-
-Display the web preview icon <walkthrough-web-preview-icon></walkthrough-web-preview-icon> by including this in your tutorial’s Markdown:
-
-```
-<walkthrough-web-preview-icon>
-</walkthrough-web-preview-icon>
-```
-
-To create a link that shines a <walkthrough-spotlight-pointer spotlightId="devshell-web-preview-button">spotlight on the web preview icon</walkthrough-spotlight-pointer>, add the following:
-
-```
-<walkthrough-spotlight-pointer
-    spotlightId="devshell-web-preview-button">
-    spotlight on the web preview icon
-</walkthrough-spotlight-pointer>
-```
-
-You can find a list of supported spotlight targets in the [documentation for Cloud Shell Tutorials](https://cloud.google.com/shell/docs/tutorials).
-
-You've now built a tutorial to help onboard users!
-
-Next, you’ll create a button that allows users to launch your tutorial in Cloud Shell.
-
-
-## Creating a button for your site
-
-Here is how you can create a button for your website, blog, or open source project that will allow users to launch the tutorial you just created.
-
-
-### Creating an HTML Button
-
-To build a link for the 'Open in Cloud Shell' feature, start with this base HTML and replace the following:
-
-**`YOUR_REPO_URL_HERE`** with the project repository URL that you'd like cloned for your users in their launched Cloud Shell environment.
-
-**`TUTORIAL_FILE.md`** with your tutorial’s Markdown file. The path to the file is relative to the root directory of your project repository.
-
-```
-<a  href="https://console.cloud.google.com/cloudshell/open?git_repo=YOUR_REPO_URL_HERE&tutorial=TUTORIAL_FILE.md">
-    <img alt="Open in Cloud Shell" src="http://gstatic.com/cloudssh/images/open-btn.png">
-</a>
-```
-
-Once you've edited the above HTML with the appropriate values for `git_repo` and `tutorial`, use the HTML snippet to generate the 'Open in Cloud Shell' button for your project.
-
-
-### Creating a Markdown Button
-
-If you are posting the 'Open in Cloud Shell' button in a location that accepts Markdown instead of HTML, use this example instead:
-
-```
-[![Open this project in Cloud Shell](http://gstatic.com/cloudssh/images/open-btn.png)](https://console.cloud.google.com/cloudshell/open?git_repo=YOUR_REPO_URL_HERE&page=editor&tutorial=TUTORIAL_FILE.md)
-```
-
-Likewise, once you've replaced `YOUR_REPO_URL_HERE` and `TUTORIAL_FILE.md` in the 'Open in Cloud Shell' URL as described above, the resulting Markdown snippet can be used to create your button.
-
-
-## Congratulations
-
-<walkthrough-conclusion-trophy></walkthrough-conclusion-trophy>
-
-You’re all set!
-
-You can now have users launch your tutorial in Cloud Shell and have them start using your project with ease.
+If there is a device segment:
+- device_segment
 
 
