@@ -87,4 +87,8 @@ If there is revenue:
 If there is a device segment:
 - device_segment
 
+## More Queries to Try
 
+In your [BigQuery Console](https://pantheon.corp.google.com/bigquery?project={{project-id}}) you
+can enter in any SQL query you want, and get your data in any format you want. Here are a few
+examples:

@@ -290,6 +290,7 @@ class Hooks:
         advertisers = setting.settings['advertiser_id'].value
         if isinstance(choice, list):
             file_map = {}
+            print(len(choice), choice)
             for i in range(len(choice)):
                 option = choice[i]
                 advertiser = advertisers[i]
