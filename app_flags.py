@@ -16,6 +16,8 @@
 # Note that these code samples being shared are not official Google
 # products and are not formally supported.
 # ************************************************************************/
+import re
+
 from absl import flags
 from datetime import datetime
 from dateutil.parser import parse as parse_date
@@ -326,10 +328,21 @@ class Hooks:
                 cprint('Invalid option', 'red', attrs=['bold'])
                 setting.value = None
                 return False
+
+            def paths(*args, **kwargs):
+                return [os.environ['HOME']]
+
+            def hide(value: str):
+                return '/.' not in value and (
+                    value.endswith('.csv')
+                    or not re.search(r'\.([a-z0-9A-Z]*)$', value)
+                )
+
             for advertiser in advertisers:
                 options.append(prompt(
                     'Advertiser #{}: '.format(advertiser),
                     completer=PathCompleter(get_paths=os.environ['HOME']),
+                    file_filter=hide,
                 ))
             break
 
