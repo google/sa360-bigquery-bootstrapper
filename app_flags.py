@@ -347,8 +347,10 @@ class Hooks:
             for advertiser in advertisers:
                 options.append(prompt(
                     'Advertiser #{}: '.format(advertiser),
-                    completer=PathCompleter(get_paths=paths),
-                    file_filter=hide,
+                    completer=PathCompleter(
+                        get_paths=paths,
+                        file_filter=hide,
+                    )
                 ))
             break
 
