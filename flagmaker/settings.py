@@ -21,6 +21,7 @@ from typing import Dict
 from typing import List
 
 from absl import flags
+from prompt_toolkit import prompt
 from .building_blocks import SettingOptionInterface
 from .building_blocks import SettingsInterface
 from .building_blocks import Value
@@ -129,7 +130,7 @@ class SettingOption(SettingOptionInterface):
                 return
 
             if prompt != '':
-                val = input(prompt)
+                val = prompt(prompt)
                 if val == '' and self.default is not None:
                     self.value = self.default
                 else:
