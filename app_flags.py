@@ -17,6 +17,7 @@
 # products and are not formally supported.
 # ************************************************************************/
 from absl import flags
+from dateutil.parser import parse as parse_date
 from google.api_core import exceptions
 from google.api_core.exceptions import NotFound
 from google.cloud import storage
@@ -89,6 +90,12 @@ class AppSettings(settings.AbstractSettings):
                     prompt=self.hooks.get_file_paths,
                     conditional=lambda s: s['has_historical_data'].value,
                 ),
+                'first_date_conversions': settings.SettingOption.create(
+                    self,
+                    'The first date of conversions',
+                    after=self.hooks.convert_to_date,
+                    conditional=lambda s: s['has_historical_data'].value,
+                )
             }),
             settings.SettingBlock('Historical Columns', {
                 'account_column_name': settings.SettingOption.create(
@@ -394,3 +401,11 @@ class Hooks:
         if 'historical_map' not in settings.custom:
             settings.custom['historical_map'] = {}
         settings.custom['historical_map'][setting.value] = setting.default
+
+    def convert_to_date(self, setting: settings.SettingOption):
+        try:
+            setting.value = parse_date(setting.value)
+            return True
+        except ValueError:
+            cprint('Invalid Date Selection. Use either y-m-d or m/d/y', 'red')
+            return False
