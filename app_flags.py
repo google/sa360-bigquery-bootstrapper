@@ -16,13 +16,17 @@
 # Note that these code samples being shared are not official Google
 # products and are not formally supported.
 # ************************************************************************/
+import re
+
 from absl import flags
 from datetime import datetime
 from dateutil.parser import parse as parse_date
 from google.api_core import exceptions
 from google.api_core.exceptions import NotFound
 from google.cloud import storage
+from prompt_toolkit.completion import PathCompleter
 from termcolor import cprint
+from prompt_toolkit import prompt
 import os
 
 from flagmaker import settings
@@ -71,10 +75,10 @@ class AppSettings(settings.AbstractSettings):
                     self,
                     'Include Historical Data?\n'
                     'Note: This will be true as long as any advertisers '
-                    'are going to have historical data included. If you are '
+                    'are going to have historical data included.\nIf you are '
                     'uploading multiple advertisers, any of them with '
                     'historical data should have the same format. If not, '
-                    'upload individual advertisers.',
+                    'upload individual advertisers\nInput',
                     method=flags.DEFINE_boolean,
                 ),
                 'storage_bucket': settings.SettingOption.create(
@@ -223,7 +227,7 @@ class Hooks:
                     cprint('Invalid selection', 'red', attrs=['bold'])
                     return False
             elif setting.value == 'c':
-                setting.value = input('Select project name: ')
+                setting.value = prompt('Select project name: ')
             elif not ChooseAnother.toggle:
                 cprint('Select a valid input option', 'red')
                 return False
@@ -234,7 +238,7 @@ class Hooks:
                 setting.value = self.storage.get_bucket(setting.value).name
                 return True
             except exceptions.NotFound as e:
-                r = input(
+                r = prompt(
                     'Cannot find bucket {0}. Create [y/n]? '.format(setting)
                 )
                 if r.lower() == 'y':
@@ -257,7 +261,7 @@ class Hooks:
                        '-------------------------------------',
                        'red')
             if ChooseAnother.toggle:
-                setting.value = input(
+                setting.value = prompt(
                     'Press Ctrl+C to cancel or choose a different input: '
                 )
 
@@ -280,14 +284,18 @@ class Hooks:
                'You can leave any value without historical data'
                'blank.', 'blue')
 
-        return ('Do you want to:\n'
-                '1. Enter comma separated values to map'
-                ' each advertiser ID\n'
-                '2. Enter each value separately?\n')
+        return (
+            'Do you want to:\n' +
+            '1. Enter each value separately?\n'
+            '2. Enter comma separated values to map each advertiser ID\n'
+            'Choice:'
+        ) if isinstance(advertisers, list) and len(advertisers) > 1 else None
 
     def handle_csv_paths(self, setting: settings.SettingOption):
         choice = setting.value
         advertisers = setting.settings['advertiser_id'].value
+        if not isinstance(advertisers, list):
+            advertisers = [advertisers]
         if isinstance(choice, list):
             file_map = {}
             for i in range(len(choice)):
@@ -303,20 +311,36 @@ class Hooks:
             options = choice.split(',')
 
         while True:
-            if choice == '1':
-                options = input(
+            if choice == '2' and len(advertisers) > 1:
+                options = prompt(
                     'Add comma-separated file '
                     'locations\n'
                     'IDs:    {}\n'
-                    'Values: '.format(','.join(advertisers))
+                    'Values: '.format(
+                        ','.join(advertisers)
+                    )
                 ).split(',')
                 break
-            elif choice != '2':
+            elif choice != '1':
                 cprint('Invalid option', 'red', attrs=['bold'])
                 setting.value = None
                 return False
+
+            def paths(*args, **kwargs):
+                return [os.environ['HOME']]
+
+            def hide(value: str):
+                return '/.' not in value and (
+                    value.endswith('.csv')
+                    or not re.search(r'\.([a-z0-9A-Z]*)$', value)
+                )
+
             for advertiser in advertisers:
-                options.append(input('Advertiser #{}: '.format(advertiser)))
+                options.append(prompt(
+                    'Advertiser #{}: '.format(advertiser),
+                    completer=PathCompleter(get_paths=os.environ['HOME']),
+                    file_filter=hide,
+                ))
             break
 
         if len(options) > len(advertisers):
@@ -335,7 +359,7 @@ class Hooks:
             ))
             file_map[advertisers[i]] = filename
         while True:
-            result = input(
+            result = prompt(
                 'Confirm Map:\n{}\nCorrect? [y/n]: '.format('\n'.join(results))
             )
             if result == 'y':
@@ -413,7 +437,7 @@ class Hooks:
                 kwargs['dayfirst'] = not location.lower().startswith('us')
                 value = parse_date(setting.value, **kwargs)
                 while True:
-                    result = input(
+                    result = prompt(
                         'Date not in yyyy-mm-dd format. '
                         'Converted to {}. Correct? [y/n]'.format(
                             value.strftime('%Y-%m-%d')

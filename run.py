@@ -19,6 +19,7 @@
 try:
     import bootstrapper
 except ImportError:
+    print('Installing required packages...')
     from pip._internal.utils import subprocess
     subprocess.call_subprocess(['pipenv', 'install'], show_stdout=False)
     import bootstrapper
