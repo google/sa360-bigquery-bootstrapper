@@ -24,9 +24,9 @@ except ImportError:
     import bootstrapper
 
 from absl import flags
-import flagmaker as fl
+import flagmaker.settings as settings
 
 if __name__ == '__main__':
     bootstrap = bootstrapper.Bootstrap()
-    flags.adopt_module_key_flags(fl)
+    flags.adopt_module_key_flags(settings)
     bootstrap.run()

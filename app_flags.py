@@ -150,7 +150,7 @@ class AppSettings(settings.AbstractSettings):
                 'report_level': settings.SettingOption.create(
                     self,
                     'Specify the report level of the '
-                    'advertisers being uploaded.',
+                    'advertisers being uploaded (conversion/keyword/campaign)',
                     default='keyword',
                     method=AppSettings.define_enum_helper(
                         choices=['conversion','keyword','campaign']
@@ -171,7 +171,7 @@ class AppSettings(settings.AbstractSettings):
                 ),
                 'keyword_match_type': settings.SettingOption.create(
                     self,
-                    'Keyword Match Type Column [EXACT/PHRASE/BROAD etc.] '
+                    'Keyword Match Type Column '
                     '(omit if uploading a campaign-level report)',
                     default='match_type',
                     after=self.hooks.map_historical_column,

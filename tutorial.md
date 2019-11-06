@@ -52,19 +52,39 @@ You can copy the above command into the interactive shell below (or click on the
 
 ### Prompts
 
-You will be prompted many questions, including the following:
+You will be prompted to answer many questions.
+To see all prompts and hints you can run the command:
 
+    pipenv run python.py --help
 
-## Opening the editor
+You can also fill in flags using this to avoid the interactive prompts.
 
-You can edit a file stored in Cloud Shell using Cloud Shell’s built-in text editor.
+### Check your columns
 
-*  To start, open the editor by clicking on the <walkthrough-cloud-shell-editor-icon></walkthrough-cloud-shell-editor-icon> icon.
-*  Look at the source file for this tutorial by opening `tutorial.md`.
-*  Try making a change to the file for this tutorial, then saving it using the <walkthrough-editor-spotlight spotlightId="fileMenu">file menu</walkthrough-editor-spotlight>.
+If you're uploading historical data, 
+the easiest approach is to change your column headers.
 
-To restart the tutorial with your changes, run:
-```bash
-cloudshell launch-tutorial -d tutorial.md
-```
+Alternatively, you can fill in the prompts for your file.
+
+*Note*: At the moment, this script only allows one file
+configuration type at a time. If each advertiser you want
+to upload has its own specific file format (or different headers)
+and you can't get the header names to match, then you'll have to
+run this script multiple times.
+
+The script expects the following headers by default:
+
+- Account Name: account_name
+- Campaign Name: campaign_name
+- Conversions: conversions
+- Date: date
+- Ad Group: ad_group_name
+- Keyword Match Type: match_type
+
+If there is revenue:
+- Revenue Column: revenue
+
+If there is a device segment:
+- device_segment
+
 
