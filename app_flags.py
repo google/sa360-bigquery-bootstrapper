@@ -283,16 +283,13 @@ class Hooks:
                'and just specify the file name(s).\n'
                'You can leave any value without historical data'
                'blank.', 'blue')
+
         return (
             'Do you want to:\n' +
-            '1. Enter each value separately?' +
-            (
-                '\n2. Enter comma separated values to map'
-                ' each advertiser ID\n'
-                if isinstance(advertisers, list) and len(advertisers) > 1
-                else ''
-            )
-        )
+            '1. Enter each value separately?\n'
+            '2. Enter comma separated values to map each advertiser ID\n'
+            'Choice:'
+        ) if isinstance(advertisers, list) and len(advertisers) > 1 else None
 
     def handle_csv_paths(self, setting: settings.SettingOption):
         choice = setting.value
