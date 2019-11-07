@@ -33,6 +33,7 @@ from flagmaker import settings
 from typing import List
 
 from flagmaker.exceptions import FlagMakerPromptInterruption
+from flagmaker.exceptions import FlagMakerConfigurationError
 
 
 class AppSettings(settings.AbstractSettings):
@@ -226,13 +227,11 @@ class Hooks:
                     setting.value = value
                     return True
                 else:
-                    cprint('Invalid selection', 'red', attrs=['bold'])
-                    return False
+                    raise FlagMakerConfigurationError('Invalid selection')
             elif setting.value == 'c':
                 setting.value = prompt('Select project name: ')
             elif not ChooseAnother.toggle:
-                cprint('Select a valid input option', 'red')
-                return False
+                raise FlagMakerConfigurationError('Select a valid option')
             if not setting:
                 return True
             ChooseAnother.toggle = False
@@ -331,9 +330,8 @@ class Hooks:
                 ).split(',')
                 break
             elif choice != '1':
-                cprint('Invalid option', 'red', attrs=['bold'])
                 setting.value = None
-                return False
+                raise FlagMakerConfigurationError('Invalid option')
 
             def paths(*args, **kwargs):
                 return [os.environ['HOME']]
@@ -355,10 +353,11 @@ class Hooks:
             break
 
         if len(options) > len(advertisers):
-            cprint('Invalid mapping. '
-                   'Cannot have more filenames ({}) '.format(len(options)) +
-                   'than advertisers ({}).'.format(len(advertisers)))
-            return False
+            raise FlagMakerConfigurationError(
+                'Invalid mapping. '
+                'Cannot have more filenames ({}) '.format(len(options)) +
+                'than advertisers ({}).'.format(len(advertisers))
+            )
 
         file_map = {}
         results = []
@@ -376,7 +375,7 @@ class Hooks:
             if result == 'y':
                 break
             if result == 'n':
-                return False
+                raise FlagMakerConfigurationError()
         setting.settings.custom['file_map'] = file_map
         setting.value = options
         return True
@@ -455,7 +454,7 @@ class Hooks:
                         )
                     )
                     if result == 'n':
-                        return False
+                        raise FlagMakerConfigurationError()
                     if result == 'y':
                         break
                     cprint('Invalid option. Select y/n or set value to '
@@ -464,5 +463,4 @@ class Hooks:
             setting.value = value
             return True
         except ValueError:
-            cprint('Invalid Date Selection. Use either y-m-d or m/d/y', 'red')
-            return False
+            raise FlagMakerConfigurationError('Invalid Date Selection. Use either y-m-d or m/d/y')

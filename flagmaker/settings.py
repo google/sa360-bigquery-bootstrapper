@@ -112,11 +112,9 @@ class SettingOption(SettingOptionInterface):
             return
 
         in_called = (self, self.after) not in self.called
-        if in_called or self._error:
+        if in_called:
             self.called[(self, self.after)] = True
-            self._error = not self.after(self)
-        else:
-            self._error = False
+            self.after(self)
 
     def set_value(self, value: str = '', ask: str = '', init: str = ''):
         while True:
@@ -140,10 +138,11 @@ class SettingOption(SettingOptionInterface):
                 if val == '' and self.default is not None:
                     self.value = self.default
                 else:
-                    self.value = val
-                if self._error:
-                    self.value = None
-                    continue
+                    try:
+                        self.value = val
+                    except FlagMakerConfigurationError as err:
+                        cprint(err.message, 'red')
+                        continue
             else:
                 self.value = value
             if not Validator.validate(self) or self._error:
@@ -182,6 +181,7 @@ class SettingOption(SettingOptionInterface):
 
 
 SettingOptions = Dict[str, SettingOption]
+
 
 class SettingBlock:
     def __init__(self, block: str,
@@ -285,6 +285,7 @@ class AbstractSettings(SettingsInterface):
 
 AbstractSettingsClass = ClassVar[AbstractSettings]
 
+
 class Config(object):
     """The entry point for setting the Settings class for an app.
 
@@ -292,6 +293,7 @@ class Config(object):
 
     This will bootstrap the settings class correctly.
     """
+
     def __init__(self, s: AbstractSettingsClass):
         self.s = s
         self.instance = None
