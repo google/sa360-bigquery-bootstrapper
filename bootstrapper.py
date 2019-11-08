@@ -80,7 +80,7 @@ class Bootstrap:
                 'red',
                 attrs=['bold']
             )
-            cprint(err.message, 'red')
+            cprint(str(err), 'red')
 
     def load_datasets(self, client, project):
         for k, v in (('raw', 'raw_dataset'), ('views', 'view_dataset')):
@@ -210,7 +210,7 @@ class Bootstrap:
             )
             pass
         except BadRequest as err:
-            cprint(err.message, 'red', attrs=['bold'])
+            cprint(str(err), 'red', attrs=['bold'])
             if len(err.errors) > 0:
                 for e in err.errors:
                     cprint('- {}'.format(e['debugInfo']), 'red')

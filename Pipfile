@@ -15,6 +15,7 @@ pipenv = "*"
 termcolor = "*"
 python-dateutil = "*"
 prompt_toolkit = "*"
+xlrd = "*"
 
 [requires]
 python_version = "3"

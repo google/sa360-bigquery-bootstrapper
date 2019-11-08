@@ -16,23 +16,27 @@
 # Note that these code samples being shared are not official Google
 # products and are not formally supported.
 # ************************************************************************/
+from collections.abc import Iterable
 from typing import ClassVar
 from typing import Dict
 from typing import List
 
 from absl import flags
+from prompt_toolkit import ANSI
 from prompt_toolkit import prompt
+from prompt_toolkit.completion import WordCompleter
+from termcolor import cprint
+from termcolor import colored
 
 from flagmaker.exceptions import FlagMakerPromptInterruption
+from flagmaker.validators import ChoiceValidator
 from .building_blocks import SettingOptionInterface
 from .building_blocks import SettingsInterface
 from .building_blocks import Value
+from .exceptions import FlagMakerConfigurationError
 from .exceptions import FlagMakerInputError
 from .hints import StringKeyDict
 from .sanity import Validator
-from termcolor import cprint
-from absl import flags
-from .exceptions import FlagMakerConfigurationError
 
 FLAGS = flags.FLAGS
 
@@ -51,6 +55,7 @@ class SettingOption(SettingOptionInterface):
     custom_data: StringKeyDict = {}
     include_in_interactive: bool = True
     called: dict = {}
+    options: Iterable = None
     _error: bool = False
 
     def __init__(self):
@@ -60,7 +65,9 @@ class SettingOption(SettingOptionInterface):
     def create(cls, settings: SettingsInterface, helptext=None, default=None,
                method=flags.DEFINE_string, required=True, validation=None,
                conditional=None, after=None, prompt=None,
-               include_in_interactive=True):
+               include_in_interactive=True, options=None):
+        if options is None:
+            options = []
         fl = cls()
         fl.settings = settings
         fl.default = default
@@ -72,6 +79,7 @@ class SettingOption(SettingOptionInterface):
         fl.after = after
         fl.prompt = prompt
         fl.include_in_interactive = include_in_interactive
+        fl.options = options
         return fl
 
     def get_prompt(self, k):
@@ -86,6 +94,28 @@ class SettingOption(SettingOptionInterface):
             if callable(self.prompt):
                 prompt_val += self.prompt(self)
             prompt_val += '\nInput'
+        if self.method != flags.DEFINE_enum:
+            method = self.get_basic_prompt
+        else:
+            method = self.get_option_prompt
+        return method(k, default, prompt_val)
+
+    def get_option_prompt(self, k, default, prompt_val):
+        if not isinstance(self.options, Iterable):
+            raise FlagMakerConfigurationError('Need to add options')
+        return (
+            '{0} ({1})\n'
+            '{2}\n'
+            '{3}\n'
+            '{4}Choice: '
+        ).format(
+            self.help, k,
+            colored('Options:', attrs=['underline']),
+            '\n'.join(map(lambda x: '- ' + x, self.options)),
+            default, prompt_val
+        )
+
+    def get_basic_prompt(self, k, default, prompt_val):
         return '{} ({}){}{}: '.format(self.help, k, default, prompt_val)
 
     @property
@@ -104,6 +134,12 @@ class SettingOption(SettingOptionInterface):
                 value = False
         elif self.method == flags.DEFINE_integer:
             value = int(value)
+        elif self.method == flags.DEFINE_enum:
+            is_iterable = isinstance(self.options, Iterable)
+            if not (is_iterable and value in self.options):
+                raise FlagMakerInputError(
+                    'Need to choose one of [{}]'.format(', '.join(self.options))
+                )
         self._value.set_val(value)
         # perform actions
 
@@ -134,14 +170,18 @@ class SettingOption(SettingOptionInterface):
                     # we intentionally set ask to None. A conditional prompt
                     # doesn't want this to continue
                     return
-                val = prompt(ask)
+                kwargs = {}
+                if isinstance(self.options, Iterable):
+                    kwargs['completer'] = WordCompleter(self.options)
+                    kwargs['validator'] = ChoiceValidator(self.options)
+                val = prompt(ANSI(ask), **kwargs)
                 if val == '' and self.default is not None:
                     self.value = self.default
                 else:
                     try:
                         self.value = val
                     except FlagMakerConfigurationError as err:
-                        cprint(err.message, 'red')
+                        cprint(str(err), 'red')
                         continue
             else:
                 self.value = value
@@ -254,6 +294,8 @@ class AbstractSettings(SettingsInterface):
                 }
                 if not setting.include_in_interactive:
                     kwargs['default'] = setting.default
+                if setting.method == flags.DEFINE_enum:
+                    kwargs['enum_values'] = setting.options
                 setting.method(k, help=setting.help, **kwargs)
                 self.flattened_args[k] = setting
         return FLAGS

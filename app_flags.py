@@ -27,6 +27,7 @@ from google.cloud import storage
 from prompt_toolkit.completion import PathCompleter
 from termcolor import cprint
 from prompt_toolkit import prompt
+from xlrd import open_workbook
 import os
 
 from flagmaker import settings
@@ -89,6 +90,12 @@ class AppSettings(settings.AbstractSettings):
                     'Storage Bucket Name',
                     prompt=self.hooks.bucket_options,
                     after=self.hooks.create_bucket,
+                ),
+                'file_location': settings.SettingOption.create(
+                    self,
+                    'Specify your file(s)/folder location',
+                    method=flags.DEFINE_enum,
+                    options=('GCS Bucket', 'Cloud Shell Upload'),
                 ),
                 'file_path': settings.SettingOption.create(
                     self,
@@ -206,24 +213,26 @@ class Hooks:
         self.storage = None
 
     def set_clients(self, setting: settings.SettingOption):
-        settings = setting.settings
-        settings.custom['storage_client'] = self.storage = storage.Client(
-            project=settings['gcp_project_name'].value
+        s = setting.settings
+        if 'storage_client' in s.custom:
+            return True
+        s.custom['storage_client'] = self.storage = storage.Client(
+            project=s['gcp_project_name'].value
         )
         return True
 
     def create_bucket(self, setting: settings.SettingOption) -> bool:
         class ChooseAnother:
             toggle = False
-        settings = setting.settings
+        s = setting.settings
 
         while True:
-            if 'buckets' not in settings.custom:
+            if 'buckets' not in s.custom:
                 return True
             if setting.value.isnumeric():
                 val = int(setting.value)
-                if val <= len(settings.custom['buckets']):
-                    value = settings.custom['buckets'][val - 1].name
+                if val <= len(s.custom['buckets']):
+                    value = s.custom['buckets'][val - 1].name
                     setting.value = value
                     return True
                 else:
@@ -246,7 +255,7 @@ class Hooks:
                     ChooseAnother.toggle = True
                     result = self.storage.create_bucket(
                         setting.value,
-                        project=settings['gcp_project_name'].value
+                        project=s['gcp_project_name'].value
                     )
                     cprint('Created ' + setting.value, 'green', attrs=['bold'])
                     setting.value = result
@@ -267,8 +276,8 @@ class Hooks:
                 )
 
     def bucket_options(self, setting: settings.SettingOption):
-        settings = setting.settings
-        buckets = settings.custom['buckets'] = list(self.storage.list_buckets())
+        s = setting.settings
+        buckets = s.custom['buckets'] = list(self.storage.list_buckets())
         bucket_size = len(buckets)
         result = '\n'.join(['{}: {}'.format(b+1, buckets[b])
                             for b in range(bucket_size)])
@@ -276,14 +285,14 @@ class Hooks:
         return result
 
     def get_file_paths(self, setting: settings.SettingOption):
-        '''
+        """
         :param setting: SettingOption object
         :raise FlagMakerPromptInterruption Returns '1' interrupting the prompt
                if there is only one valid answer.
         :return: Prompt string
-        '''
-        settings = setting.settings
-        advertisers = settings['advertiser_id'].value
+        """
+        s = setting.settings
+        advertisers = s['advertiser_id'].value
 
         cprint('If in storage, provide a full URL starting with gs://. '
                'Otherwise, drag and drop the file(s) here '
@@ -295,8 +304,7 @@ class Hooks:
         return (
             'Do you want to:\n' +
             '1. Enter each value separately?\n'
-            '2. Enter comma separated values to map each advertiser ID\n'
-            'Choice:'
+            '2. Enter comma separated values to map each advertiser ID'
         )
 
     def handle_csv_paths(self, setting: settings.SettingOption):
