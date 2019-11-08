@@ -63,7 +63,10 @@ class Bootstrap:
                 project=project, location='US'
             )  # type : bigquery.Client
             self.load_datasets(client, project)
-            for advertiser in self.s.unwrap('advertiser_id'):
+            advertisers = self.s.unwrap('advertiser_id')
+            if not isinstance(advertisers, list):
+                advertisers = [advertisers]
+            for advertiser in advertisers:
                 cprint('Advertiser ID: {}'.format(advertiser),
                        'blue', attrs=['bold', 'underline'])
                 self.load_transfers(client, project, advertiser)
