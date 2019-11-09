@@ -16,11 +16,14 @@
 # Note that these code samples being shared are not official Google
 # products and are not formally supported.
 # ************************************************************************/
+import os
+
 from absl import flags
 import unittest
 
 import flagmaker.settings
 import app_flags
+from csv_decoder import Decoder
 from flagmaker.tests import TestSettings
 from utilities import ViewTypes
 from utilities import get_view_name
@@ -32,6 +35,12 @@ class UtilitiesTest(unittest.TestCase):
             get_view_name(ViewTypes.KEYWORD_MAPPER, '123'),
             'KeywordMapper_123'
         )
+
+
+class CSVDecoderTest(unittest.TestCase):
+    def test_size(self):
+        output_dir = Decoder('utf-8', './testdata/dirA').run()
+        self.assertEqual(len(os.listdir(output_dir)), 7)
 
 
 if __name__ == '__main__':

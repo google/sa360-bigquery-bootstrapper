@@ -25,12 +25,15 @@ from dateutil.parser import parse as parse_date
 from google.api_core import exceptions
 from google.api_core.exceptions import NotFound
 from google.cloud import storage
+from google.cloud.storage import Blob
+from google.cloud.storage import Bucket
 from prompt_toolkit.completion import PathCompleter
 from termcolor import cprint
 from prompt_toolkit import prompt
 from xlrd import open_workbook
 import os
 
+from csv_decoder import Decoder
 from flagmaker import settings
 from typing import List
 
@@ -331,7 +334,7 @@ class Hooks:
         s = setting.settings
         bucket_name = s['storage_bucket'].value
         file_location = s['file_location'].value
-        bucket = None
+        bucket: Bucket = None
         try:
             bucket = self.storage.get_bucket(bucket_name)
         except NotFound:
@@ -344,52 +347,33 @@ class Hooks:
         local = False
         if file_location == 'GCS Bucket':
             file = bucket.blob(filename)
+            path = dirname = '/tmp/in-{}/'.format(str(
+                datetime.now().strftime('%Y%m%d%H%m%S%f')
+            ))
+            os.mkdir(path)
             if not file.exists():
                 files = list(bucket.list_blobs(prefix=filename))
-                dirname = '/tmp/' + filename
+                single = False
+                for file in files:
+                    file_parts = file.name.split('/')
+                    with open(dirname + file_parts[-1], 'w+b') as fh:
+                        file.download_to_file(fh, self.storage)
+                        file.delete()
             else:
                 files = [file]
-                dirname = '/tmp/'
-            for file in files:
-                with open(dirname + filename, 'w+b') as fh:
-                    file.download_to_file(fh, self.storage)
+                single = True
         else:  #todo(seancjones: Make sure this section below works)
-            file = bucket.blob('{}'.format(filename))
-            local = True
-        for encoding in ['utf-8', 'utf-16', 'latin-1']:
-            if local:
-                full_filename = '{}/{}'.format(os.environ['HOME'], filename)
+            single = not os.path.isdir(filename)
+            path = filename
+        result_dir = Decoder(desired_encoding='utf-8', path=path).run()
+        s.custom['blobs'] = []
+        for file in os.listdir(result_dir):
+            if single:
+                blob = bucket.blob(filename)
             else:
-                full_filename = '/tmp/{}'.format(filename)
-            if os.path.isdir(full_filename):
-                for file_in_dir in os.listdir(full_filename):
-                    Hooks.try_decode_file(file, file_in_dir, encoding)
-            else:
-                Hooks.try_decode_file(file, full_filename,encoding)
-        return True
-
-    @staticmethod
-    def try_decode_file(file, filename, encoding):
-        def try_decode(fname):
-            with open(fname, 'rb') as fh:
-                if encoding == 'utf-8':
-                    file_data = fh.read()
-                    file_data.decode(encoding)
-                    return file_data
-                res = fh.read().decode(encoding).encode('utf-8')
-                file.upload_from_file(res)
-                cprint('Found a {}-'.format(encoding) +
-                       'encoded file and turned to utf-8', 'cyan')
-
-        try:
-            contents = try_decode(filename)
-            with open('/tmp/' + filename, 'w+b') as fh:
-                fh.write(contents)
-                fh.seek(0)
-                return True
-        except UnicodeDecodeError:
-            return False
-
+                blob = bucket.blob(filename + '/' + file)
+            blob.upload_from_filename(result_dir + '/' + file)
+            s.custom['blobs'].append(blob.name)
     def map_historical_column(self, setting: settings.SettingOption):
         settings = setting.settings
         setting.value = setting.value.replace(' ', '_')
