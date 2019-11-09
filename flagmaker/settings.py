@@ -17,6 +17,7 @@
 # products and are not formally supported.
 # ************************************************************************/
 from collections.abc import Iterable
+from enum import EnumMeta
 from typing import ClassVar
 from typing import Dict
 from typing import List
@@ -25,9 +26,12 @@ from absl import flags
 from prompt_toolkit import ANSI
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
+from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.shortcuts import CompleteStyle
 from termcolor import cprint
 from termcolor import colored
 
+from flagmaker.building_blocks import list_to_string_list
 from flagmaker.exceptions import FlagMakerPromptInterruption
 from flagmaker.validators import ChoiceValidator
 from .building_blocks import SettingOptionInterface
@@ -55,7 +59,7 @@ class SettingOption(SettingOptionInterface):
     custom_data: StringKeyDict = {}
     include_in_interactive: bool = True
     called: dict = {}
-    options: Iterable = None
+    _options: EnumMeta = None
     _error: bool = False
 
     def __init__(self):
@@ -79,11 +83,16 @@ class SettingOption(SettingOptionInterface):
         fl.after = after
         fl.prompt = prompt
         fl.include_in_interactive = include_in_interactive
-        fl.options = options
+        fl._options = options
         return fl
 
+    @property
+    def options(self):
+        return (list(map(lambda x: x.value, self._options))
+                if self._options is not None else None)
+
     def get_prompt(self, k):
-        default = ' [{0}]'.format(
+        default = ' [default={0}]'.format(
             self.default
         ) if self.default is not None else ''
         prompt_val = ''
@@ -101,22 +110,23 @@ class SettingOption(SettingOptionInterface):
         return method(k, default, prompt_val)
 
     def get_option_prompt(self, k, default, prompt_val):
-        if not isinstance(self.options, Iterable):
-            raise FlagMakerConfigurationError('Need to add options')
+        if not isinstance(self._options, EnumMeta):
+            raise FlagMakerConfigurationError('Need to add options for ' + k)
+        options = list_to_string_list(self.options)
         return (
-            '{0} ({1})\n'
+            '{0}\n'
+            '{1}\n'
             '{2}\n'
-            '{3}\n'
-            '{4}Choice: '
+            'Choices{3}: '
         ).format(
-            self.help, k,
+            k,
             colored('Options:', attrs=['underline']),
-            '\n'.join(map(lambda x: '- ' + x, self.options)),
+            options,
             default, prompt_val
         )
 
     def get_basic_prompt(self, k, default, prompt_val):
-        return '{} ({}){}{}: '.format(self.help, k, default, prompt_val)
+        return '{}{}{}'.format(k, default, prompt_val)
 
     @property
     def value(self):
@@ -135,10 +145,11 @@ class SettingOption(SettingOptionInterface):
         elif self.method == flags.DEFINE_integer:
             value = int(value)
         elif self.method == flags.DEFINE_enum:
-            is_iterable = isinstance(self.options, Iterable)
-            if not (is_iterable and value in self.options):
+            options = self.options
+            is_iterable = isinstance(options, Iterable)
+            if not (is_iterable and value in options):
                 raise FlagMakerInputError(
-                    'Need to choose one of [{}]'.format(', '.join(self.options))
+                    'Need to choose one of [{}]'.format(', '.join(options))
                 )
         self._value.set_val(value)
         # perform actions
@@ -170,11 +181,33 @@ class SettingOption(SettingOptionInterface):
                     # we intentionally set ask to None. A conditional prompt
                     # doesn't want this to continue
                     return
-                kwargs = {}
-                if isinstance(self.options, Iterable):
-                    kwargs['completer'] = WordCompleter(self.options)
-                    kwargs['validator'] = ChoiceValidator(self.options)
-                val = prompt(ANSI(ask), **kwargs)
+                kwargs = {
+                    'bottom_toolbar': ANSI(self.help)
+                }
+                if self.method == flags.DEFINE_enum:
+                    choices = [str(i[0])
+                               for i in
+                               enumerate(self.options, start=1)]
+                    kwargs['validator'] = ChoiceValidator(choices)
+                    kwargs['complete_style'] = CompleteStyle.READLINE_LIKE
+                    selection = prompt(ANSI(ask), **kwargs)
+                    if selection == '':
+                        val = self.default
+                    else:
+                        val = self.options[int(selection)-1]
+                elif self.method  == flags.DEFINE_multi_string:
+                    val = []
+                    i = 0
+                    while True:
+                        i += 1
+                        res = prompt(ANSI(
+                            "{} #{} (Empty Value to finish): ".format(ask, i)
+                        ), **kwargs)
+                        if res == '':
+                            break
+                        val.append(res)
+                else:
+                    val = prompt(ANSI(ask + ": "), **kwargs)
                 if val == '' and self.default is not None:
                     self.value = self.default
                 else:
