@@ -16,18 +16,25 @@
 # Note that these code samples being shared are not official Google
 # products and are not formally supported.
 # ************************************************************************/
-try:
-    import bootstrapper
-except ImportError:
-    print('Installing required packages...')
-    from pip._internal.utils import subprocess
-    subprocess.call_subprocess(['pipenv', 'install'], show_stdout=False)
-    import bootstrapper
 
-from absl import flags
-import flagmaker.settings as settings
 
-if __name__ == '__main__':
-    bootstrap = bootstrapper.Bootstrap()
-    flags.adopt_module_key_flags(settings)
-    bootstrap.run()
+class BaseFlagMakerException(Exception):
+    pass
+
+
+class FlagMarkerInternalError(BaseFlagMakerException):
+    pass
+
+
+class FlagMakerConfigurationError(BaseFlagMakerException):
+    pass
+
+
+class FlagMakerInputError(FlagMakerConfigurationError):
+    pass
+
+
+class FlagMakerPromptInterruption(BaseFlagMakerException):
+    def __init__(self, value, *args):
+        self.value = value
+        super().__init__(*args)

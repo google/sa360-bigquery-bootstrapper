@@ -16,18 +16,9 @@
 # Note that these code samples being shared are not official Google
 # products and are not formally supported.
 # ************************************************************************/
-try:
-    import bootstrapper
-except ImportError:
-    print('Installing required packages...')
-    from pip._internal.utils import subprocess
-    subprocess.call_subprocess(['pipenv', 'install'], show_stdout=False)
-    import bootstrapper
+from typing import List
+from typing import Dict
 
-from absl import flags
-import flagmaker.settings as settings
+StringList = List[str]
+StringKeyDict = Dict[str, any]
 
-if __name__ == '__main__':
-    bootstrap = bootstrapper.Bootstrap()
-    flags.adopt_module_key_flags(settings)
-    bootstrap.run()

@@ -16,18 +16,17 @@
 # Note that these code samples being shared are not official Google
 # products and are not formally supported.
 # ************************************************************************/
-try:
-    import bootstrapper
-except ImportError:
-    print('Installing required packages...')
-    from pip._internal.utils import subprocess
-    subprocess.call_subprocess(['pipenv', 'install'], show_stdout=False)
-    import bootstrapper
 
-from absl import flags
-import flagmaker.settings as settings
+[[ -z $(which pipenv) ]] && pip3 install pipenv --user
+[[ -n $1 && $(gcloud config get-value project) != $1 ]] && gcloud config set project $1 && echo "Project set"
 
-if __name__ == '__main__':
-    bootstrap = bootstrapper.Bootstrap()
-    flags.adopt_module_key_flags(settings)
-    bootstrap.run()
+gcloud services enable doubleclicksearch.googleapis.com
+gcloud services enable storage-component.googleapis.com
+gcloud services enable bigquery-json.googleapis.com
+gcloud services enable bigquerystorage.googleapis.com
+cmd="PATH=\$PATH:$HOME/.local/bin"
+if [[ $(grep -c "$cmd" $HOME/.bashrc) == 0 ]]
+then
+    echo "PATH=\$PATH:$HOME/.local/bin" >> $HOME/.bashrc
+    source ~/.bashrc
+fi

@@ -7,7 +7,15 @@ verify_ssl = true
 
 [packages]
 absl-py = "*"
-site = "*"
+google-cloud-bigquery-datatransfer = "*"
+google-cloud-bigquery = "*"
+google-cloud-storage = "*"
+typing = "*"
+pipenv = "*"
+termcolor = "*"
+python-dateutil = "*"
+prompt_toolkit = "*"
+pandas = "*"
 
 [requires]
 python_version = "3"
