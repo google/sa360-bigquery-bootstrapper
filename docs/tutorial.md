@@ -87,6 +87,24 @@ If there is revenue:
 If there is a device segment:
 - device_segment
 
+### File Uploads
+
+You can upload files easily. Recommended path is to upload a folder or individual file
+to Google Cloud. The only requirements are:
+
+1. The headers should have the same names.
+2. The header should be the first row.
+
+Accepted file formats are:
+
+- Excel (XLSX)
+- CSV (utf-8, utf-16, latin-1)
+- ZIP/TAR archived XLSX or CSV
+
+Note that the decoder will check *all* sub-directories in your specified path and will fail
+as soon as a header is different. Running multiple times may lead to duplicate rows.
+At the moment, data atomicity before uploading files is not guaranteed using this script.
+
 ## More Queries to Try
 
 In your [BigQuery Console](https://pantheon.corp.google.com/bigquery?project={{project-id}}) you
