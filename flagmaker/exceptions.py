@@ -26,11 +26,11 @@ class FlagMarkerInternalError(BaseFlagMakerException):
     pass
 
 
-class FlagMakerInputError(BaseFlagMakerException):
+class FlagMakerConfigurationError(BaseFlagMakerException):
     pass
 
 
-class FlagMakerConfigurationError(BaseFlagMakerException):
+class FlagMakerInputError(FlagMakerConfigurationError):
     pass
 
 

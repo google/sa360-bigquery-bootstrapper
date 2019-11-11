@@ -17,6 +17,7 @@
 # products and are not formally supported.
 # ************************************************************************/
 import re
+from enum import Enum
 
 from absl import flags
 from datetime import datetime
@@ -24,16 +25,31 @@ from dateutil.parser import parse as parse_date
 from google.api_core import exceptions
 from google.api_core.exceptions import NotFound
 from google.cloud import storage
+from google.cloud.storage import Blob
+from google.cloud.storage import Bucket
 from prompt_toolkit.completion import PathCompleter
 from termcolor import cprint
 from prompt_toolkit import prompt
+from xlrd import open_workbook
 import os
 
+from csv_decoder import Decoder
 from flagmaker import settings
 from typing import List
 
 from flagmaker.exceptions import FlagMakerPromptInterruption
 from flagmaker.exceptions import FlagMakerConfigurationError
+
+
+class FileLocationOptions(Enum):
+    GCS_BUCKET = 'GCS Bucket'
+    CLOUD_SHELL = 'Cloud Shell Upload'
+
+
+class ReportLevelOptions(Enum):
+    CONVERSION = 'conversion'
+    KEYWORD = 'keyword'
+    CAMPAIGN = 'campaign'
 
 
 class AppSettings(settings.AbstractSettings):
@@ -71,8 +87,8 @@ class AppSettings(settings.AbstractSettings):
                 'agency_id': settings.SettingOption.create(self, 'SA360 Agency ID'),
                 'advertiser_id': settings.SettingOption.create(
                     self,
-                    'SA360 Advertiser IDs',
-                    method=flags.DEFINE_list,
+                    'SA360 Advertiser',
+                    method=flags.DEFINE_string,
                 ),
                 'has_historical_data': settings.SettingOption.create(
                     self,
@@ -90,12 +106,18 @@ class AppSettings(settings.AbstractSettings):
                     prompt=self.hooks.bucket_options,
                     after=self.hooks.create_bucket,
                 ),
+                'file_location': settings.SettingOption.create(
+                    self,
+                    'Is your data in GCS or did you upload here?',
+                    method=flags.DEFINE_enum,
+                    options=FileLocationOptions,
+                    required=True,
+                ),
                 'file_path': settings.SettingOption.create(
                     self,
                     'Historical Data CSV File Path',
                     after=self.hooks.handle_csv_paths,
-                    method=flags.DEFINE_list,
-                    prompt=self.hooks.get_file_paths,
+                    method=flags.DEFINE_multi_string,
                     conditional=lambda s: s['has_historical_data'].value,
                 ),
                 'first_date_conversions': settings.SettingOption.create(
@@ -159,9 +181,8 @@ class AppSettings(settings.AbstractSettings):
                     'Specify the report level of the '
                     'advertisers being uploaded (conversion/keyword/campaign)',
                     default='keyword',
-                    method=AppSettings.define_enum_helper(
-                        choices=['conversion','keyword','campaign']
-                    ),
+                    method=flags.DEFINE_enum,
+                    options=ReportLevelOptions,
                 ),
                 'date_column_name': settings.SettingOption.create(
                     self,
@@ -188,13 +209,6 @@ class AppSettings(settings.AbstractSettings):
         ]
         return args
 
-    @staticmethod
-    def define_enum_helper(choices):
-        def inner(*args, **kwargs):
-            kwargs['enum_values'] = choices
-            return flags.DEFINE_enum(*args, **kwargs)
-        return inner
-
 
 class Hooks:
     """Convenience class to add all hooks
@@ -206,24 +220,26 @@ class Hooks:
         self.storage = None
 
     def set_clients(self, setting: settings.SettingOption):
-        settings = setting.settings
-        settings.custom['storage_client'] = self.storage = storage.Client(
-            project=settings['gcp_project_name'].value
+        s = setting.settings
+        if 'storage_client' in s.custom:
+            return True
+        s.custom['storage_client'] = self.storage = storage.Client(
+            project=s['gcp_project_name'].value
         )
         return True
 
     def create_bucket(self, setting: settings.SettingOption) -> bool:
         class ChooseAnother:
             toggle = False
-        settings = setting.settings
+        s = setting.settings
 
         while True:
-            if 'buckets' not in settings.custom:
+            if 'buckets' not in s.custom:
                 return True
             if setting.value.isnumeric():
                 val = int(setting.value)
-                if val <= len(settings.custom['buckets']):
-                    value = settings.custom['buckets'][val - 1].name
+                if val <= len(s.custom['buckets']):
+                    value = s.custom['buckets'][val - 1].name
                     setting.value = value
                     return True
                 else:
@@ -246,7 +262,7 @@ class Hooks:
                     ChooseAnother.toggle = True
                     result = self.storage.create_bucket(
                         setting.value,
-                        project=settings['gcp_project_name'].value
+                        project=s['gcp_project_name'].value
                     )
                     cprint('Created ' + setting.value, 'green', attrs=['bold'])
                     setting.value = result
@@ -267,8 +283,8 @@ class Hooks:
                 )
 
     def bucket_options(self, setting: settings.SettingOption):
-        settings = setting.settings
-        buckets = settings.custom['buckets'] = list(self.storage.list_buckets())
+        s = setting.settings
+        buckets = s.custom['buckets'] = list(self.storage.list_buckets())
         bucket_size = len(buckets)
         result = '\n'.join(['{}: {}'.format(b+1, buckets[b])
                             for b in range(bucket_size)])
@@ -276,14 +292,14 @@ class Hooks:
         return result
 
     def get_file_paths(self, setting: settings.SettingOption):
-        '''
+        """
         :param setting: SettingOption object
         :raise FlagMakerPromptInterruption Returns '1' interrupting the prompt
                if there is only one valid answer.
         :return: Prompt string
-        '''
-        settings = setting.settings
-        advertisers = settings['advertiser_id'].value
+        """
+        s = setting.settings
+        advertisers = s['advertiser_id'].value
 
         cprint('If in storage, provide a full URL starting with gs://. '
                'Otherwise, drag and drop the file(s) here '
@@ -295,20 +311,16 @@ class Hooks:
         return (
             'Do you want to:\n' +
             '1. Enter each value separately?\n'
-            '2. Enter comma separated values to map each advertiser ID\n'
-            'Choice:'
+            '2. Enter comma separated values to map each advertiser ID'
         )
 
     def handle_csv_paths(self, setting: settings.SettingOption):
         choice = setting.value
-        advertisers = setting.settings['advertiser_id'].value
-        if not isinstance(advertisers, list):
-            advertisers = [advertisers]
+        advertiser = setting.settings['advertiser_id'].value
         if isinstance(choice, list):
             file_map = {}
             for i in range(len(choice)):
                 option = choice[i]
-                advertiser = advertisers[i]
                 file_map[advertiser] = option
                 if option != '':
                     self.ensure_utf8(setting, option)
@@ -318,72 +330,11 @@ class Hooks:
         if not choice.isnumeric():
             options = choice.split(',')
 
-        while True:
-            if choice == '2' and len(advertisers) > 1:
-                options = prompt(
-                    'Add comma-separated file '
-                    'locations\n'
-                    'IDs:    {}\n'
-                    'Values: '.format(
-                        ','.join(advertisers)
-                    )
-                ).split(',')
-                break
-            elif choice != '1':
-                setting.value = None
-                raise FlagMakerConfigurationError('Invalid option')
-
-            def paths(*args, **kwargs):
-                return [os.environ['HOME']]
-
-            def hide(value: str):
-                return '/.' not in value and (
-                    value.endswith('.csv')
-                    or not re.search(r'\.([a-z0-9A-Z]*)$', value)
-                )
-
-            for advertiser in advertisers:
-                options.append(prompt(
-                    'Advertiser #{}: '.format(advertiser),
-                    completer=PathCompleter(
-                        get_paths=paths,
-                        file_filter=hide,
-                    )
-                ))
-            break
-
-        if len(options) > len(advertisers):
-            raise FlagMakerConfigurationError(
-                'Invalid mapping. '
-                'Cannot have more filenames ({}) '.format(len(options)) +
-                'than advertisers ({}).'.format(len(advertisers))
-            )
-
-        file_map = {}
-        results = []
-        for i in range(len(advertisers)):
-            filename = options[i] if i < len(options) else '-'
-            results.append('{}:   {}'.format(
-                advertisers[i],
-                filename,
-            ))
-            file_map[advertisers[i]] = filename
-        while True:
-            result = prompt(
-                'Confirm Map:\n{}\nCorrect? [y/n]: '.format('\n'.join(results))
-            )
-            if result == 'y':
-                break
-            if result == 'n':
-                raise FlagMakerConfigurationError()
-        setting.settings.custom['file_map'] = file_map
-        setting.value = options
-        return True
-
     def ensure_utf8(self, setting: settings.SettingOption, filename: str):
-        settings = setting.settings
-        bucket_name = settings['storage_bucket'].value
-        bucket = None
+        s = setting.settings
+        bucket_name = s['storage_bucket'].value
+        file_location = s['file_location'].value
+        bucket: Bucket = None
         try:
             bucket = self.storage.get_bucket(bucket_name)
         except NotFound:
@@ -394,42 +345,35 @@ class Hooks:
                    'bucket interactively.', 'red')
             exit(1)
         local = False
-        if filename.startswith('gs://'):
-            filename = filename.replace('gs://{}/'.format(bucket_name), '')
+        if file_location == 'GCS Bucket':
             file = bucket.blob(filename)
-            with open('/tmp/' + filename, 'w+b') as fh:
-                file.download_to_file(fh, self.storage)
-        else:
-            file = bucket.blob('{}'.format(filename))
-            local = True
-
-        def try_decode(fname, encoding):
-            with open(fname, 'rb') as fh:
-                if encoding == 'utf-8':
-                    file_data = fh.read()
-                    file_data.decode(encoding)
-                    return file_data
-                file_data = fh.read().decode(encoding).encode('utf-8')
-                cprint('Found a {}-'.format(encoding) +
-                       'encoded file and turned to utf-8', 'cyan')
-                return file_data
-
-        for encoding in ['utf-8', 'utf-16', 'latin-1']:
-            if local:
-                full_filename = '{}/{}'.format(os.environ['HOME'], filename)
+            path = dirname = '/tmp/in-{}/'.format(str(
+                datetime.now().strftime('%Y%m%d%H%m%S%f')
+            ))
+            os.mkdir(path)
+            if not file.exists():
+                files = list(bucket.list_blobs(prefix=filename))
+                single = False
+                for file in files:
+                    file_parts = file.name.split('/')
+                    with open(dirname + file_parts[-1], 'w+b') as fh:
+                        file.download_to_file(fh, self.storage)
+                        file.delete()
             else:
-                full_filename = '/tmp/{}'.format(filename)
-            try:
-                contents = try_decode(full_filename, encoding)
-                with open('/tmp/' + filename, 'w+b') as fh:
-                    fh.write(contents)
-                    fh.seek(0)
-                    file.upload_from_file(fh)
-                break
-            except UnicodeDecodeError:
-                continue
-        return True
-
+                files = [file]
+                single = True
+        else:  #todo(seancjones: Make sure this section below works)
+            single = not os.path.isdir(filename)
+            path = filename
+        result_dir = Decoder(desired_encoding='utf-8', path=path).run()
+        s.custom['blobs'] = []
+        for file in os.listdir(result_dir):
+            if single:
+                blob = bucket.blob(filename)
+            else:
+                blob = bucket.blob(filename + '/' + file)
+            blob.upload_from_filename(result_dir + '/' + file)
+            s.custom['blobs'].append(blob.name)
     def map_historical_column(self, setting: settings.SettingOption):
         settings = setting.settings
         setting.value = setting.value.replace(' ', '_')
@@ -463,4 +407,6 @@ class Hooks:
             setting.value = value
             return True
         except ValueError:
-            raise FlagMakerConfigurationError('Invalid Date Selection. Use either y-m-d or m/d/y')
+            raise FlagMakerConfigurationError(
+                'Invalid Date Selection. Use either y-m-d or m/d/y'
+            )

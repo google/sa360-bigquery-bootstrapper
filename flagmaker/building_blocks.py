@@ -18,6 +18,7 @@
 # ************************************************************************/
 from abc import ABC
 from abc import abstractmethod
+from collections.abc import Iterable
 from enum import Enum
 
 
@@ -110,3 +111,13 @@ class SettingsInterface(ABC):
     @abstractmethod
     def __getitem__(self, item):
         pass
+
+
+def list_to_string_list(l: Enum):
+    i = [0]
+
+    def count():
+        i[0] += 1
+        return i[0]
+
+    return '\n'.join(list(map(lambda x: '{}. {}'.format(count(), x), l)))

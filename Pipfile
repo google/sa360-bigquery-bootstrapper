@@ -15,6 +15,7 @@ pipenv = "*"
 termcolor = "*"
 python-dateutil = "*"
 prompt_toolkit = "*"
+pandas = "*"
 
 [requires]
 python_version = "3"

@@ -80,7 +80,7 @@ class Bootstrap:
                 'red',
                 attrs=['bold']
             )
-            cprint(err.message, 'red')
+            cprint(str(err), 'red')
 
     def load_datasets(self, client, project):
         for k, v in (('raw', 'raw_dataset'), ('views', 'view_dataset')):
@@ -163,7 +163,8 @@ class Bootstrap:
         return schema
 
     def load_historical_tables(self, client, project, advertiser):
-        file_map = self.settings.custom['file_map']
+        s = self.settings
+        file_map = s.custom['file_map']
         in_map = advertiser in file_map
         if not in_map or not file_map[advertiser]:
             cprint('No historical file provided for {}'.format(advertiser),
@@ -182,7 +183,6 @@ class Bootstrap:
             dataset,
             table_name,
         )
-        uri = 'gs://{}/{}'.format(self.s.unwrap('storage_bucket'), file)
         job_config = bigquery.LoadJobConfig()
         job_config.autodetect = True
         job_config.skip_leading_rows = 1
@@ -195,10 +195,12 @@ class Bootstrap:
             pass
 
         try:
-            load_job = client.load_table_from_uri(
-                uri, dataset_ref.table(table_name), job_config=job_config
-            )
-            load_job.result()
+            for blob in s.custom['blobs']:
+                uri = 'gs://{}/{}'.format(self.s.unwrap('storage_bucket'), blob)
+                load_job = client.load_table_from_uri(
+                    uri, dataset_ref.table(table_name), job_config=job_config
+                )
+                load_job.result()
             cprint(
                 'Created table {}'.format(full_table_name),
                 'green'
@@ -210,7 +212,7 @@ class Bootstrap:
             )
             pass
         except BadRequest as err:
-            cprint(err.message, 'red', attrs=['bold'])
+            cprint(str(err), 'red', attrs=['bold'])
             if len(err.errors) > 0:
                 for e in err.errors:
                     cprint('- {}'.format(e['debugInfo']), 'red')
