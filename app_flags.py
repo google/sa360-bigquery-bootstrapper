@@ -21,6 +21,8 @@ from enum import Enum
 
 from absl import flags
 from datetime import datetime
+
+from absl import logging
 from dateutil.parser import parse as parse_date
 from google.api_core import exceptions
 from google.api_core.exceptions import NotFound
@@ -360,6 +362,7 @@ class Hooks:
             os.mkdir(path)
             if not file.exists():
                 files = list(bucket.list_blobs(prefix=filename))
+                logging.info('Files: %s', files)
                 single = False
                 for file in files:
                     file_parts = file.name.split('/')
