@@ -53,8 +53,11 @@ class SettingUtil(object):
     def __init__(self, settings):
         self.settings = settings
 
-    def unwrap(self, key):
-        return self.settings[key].value
+    def unwrap(self, key, column=False):
+        val = self.settings[key].value
+        if column:
+            return re.sub(r'[^a-zA-Z0-9]', '_', val)
+        return val
 
 
 class ViewTypes(Enum):

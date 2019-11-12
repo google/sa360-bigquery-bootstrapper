@@ -271,7 +271,7 @@ class CreateViews:
                 )
 
     def view(self, view_name: ViewTypes, func_name):
-        for adv in self.s.unwrap('advertiser_id'):
+        for adv in [self.s.unwrap('advertiser_id')]:
             logging.debug(view_name.value)
             adv_view = get_view_name(view_name, adv)
             view_ref = DataSets.views.table(adv_view)
@@ -294,6 +294,7 @@ class CreateViews:
                     self.client.create_table(view)
                     cprint('+ created {}'.format(adv_view), 'green')
                 except NotFound as err:
+                    cprint('Error: {}'.format(str(err)), 'red')
                     logging.debug('error2:\n-----\n%s\n-----\n', err)
             self.keyword_mapper(adv)
 
