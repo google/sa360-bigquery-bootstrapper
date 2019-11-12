@@ -17,6 +17,7 @@
 # products and are not formally supported.
 # ************************************************************************/
 import csv
+import traceback
 from datetime import datetime
 
 from absl import logging
@@ -81,6 +82,7 @@ class Bootstrap:
                 attrs=['bold']
             )
             cprint(str(err), 'red')
+            logging.debug('%s\n%s', err.errors, traceback.format_exc())
 
     def load_datasets(self, client, project):
         for k, v in (('raw', 'raw_dataset'), ('views', 'view_dataset')):
@@ -95,8 +97,11 @@ class Bootstrap:
 
     def load_transfers(self, cli: bigquery.Client, project, advertiser):
         client = bigquery_datatransfer.DataTransferServiceClient()
-        parent = client.location_path(project, self.s.unwrap('location'))
-        config = {}
+        location = self.s.unwrap('location')
+        project = self.s.unwrap('gcp_project_name')
+        data_source = 'doubleclick_search'
+        name = client.location_data_source_path(project, location, data_source)
+        parent = client.location_path(project, location)
         params = Struct()
         display_name= 'SA360 Transfer {}'.format(advertiser)
         config = Bootstrap.config_exists(client, parent, display_name)
@@ -195,12 +200,13 @@ class Bootstrap:
             pass
 
         try:
+            table = dataset_ref.table(table_name)
             for blob in s.custom['blobs']:
                 uri = 'gs://{}/{}'.format(self.s.unwrap('storage_bucket'), blob)
                 load_job = client.load_table_from_uri(
-                    uri, dataset_ref.table(table_name), job_config=job_config
+                    uri, table, job_config=job_config
                 )
-                load_job.result()
+                logging.debug(load_job.result())
             cprint(
                 'Created table {}'.format(full_table_name),
                 'green'
@@ -271,31 +277,32 @@ class CreateViews:
                 )
 
     def view(self, view_name: ViewTypes, func_name):
-        for adv in self.s.unwrap('advertiser_id'):
-            logging.debug(view_name.value)
-            adv_view = get_view_name(view_name, adv)
-            view_ref = DataSets.views.table(adv_view)
-            view_query = getattr(
-                self,
-                func_name if func_name is not None else view_name.value
-            )(adv)
-            logging.debug(view_query)
+        adv = self.s.unwrap('advertiser_id')
+        logging.debug(view_name.value)
+        adv_view = get_view_name(view_name, adv)
+        view_ref = DataSets.views.table(adv_view)
+        view_query = getattr(
+            self,
+            func_name if func_name is not None else view_name.value
+        )(adv)
+        logging.debug(view_query)
+        try:
+            logging.debug(view_ref)
+            view: Table = self.client.get_table(view_ref)
+            view.view_query = view_query
+            cprint('= updated {}'.format(adv_view), 'green')
+        except NotFound as err:
             try:
-                logging.debug(view_ref)
-                view: Table = self.client.get_table(view_ref)
+                logging.debug('error:\n-----\n%s\n-----\n', err)
+                view = bigquery.Table(view_ref)
+                logging.debug('%s.%s', view.dataset_id, view.table_id)
                 view.view_query = view_query
-                cprint('= updated {}'.format(adv_view), 'green')
+                self.client.create_table(view)
+                cprint('+ created {}'.format(adv_view), 'green')
             except NotFound as err:
-                try:
-                    logging.debug('error:\n-----\n%s\n-----\n', err)
-                    view = bigquery.Table(view_ref)
-                    logging.debug('%s.%s', view.dataset_id, view.table_id)
-                    view.view_query = view_query
-                    self.client.create_table(view)
-                    cprint('+ created {}'.format(adv_view), 'green')
-                except NotFound as err:
-                    logging.debug('error2:\n-----\n%s\n-----\n', err)
-            self.keyword_mapper(adv)
+                cprint('Error: {}'.format(str(err)), 'red')
+                logging.debug('error2:\n-----\n%s\n-----\n', err)
+        self.keyword_mapper(adv)
 
     def historical_conversions(self, advertiser):
         views = ViewGetter(advertiser)
@@ -324,7 +331,7 @@ class CreateViews:
                 adGroup,
                 keywordMatchType
           ) a
-            ON a.keyword=h.keyword
+            ON a.keyword=h.{keyword_column_name}
             AND a.campaign=h.{campaign_column_name} 
             AND a.account=h.{account_column_name}
             AND a.adGroup=h.{adgroup_column_name}
@@ -344,6 +351,7 @@ class CreateViews:
                   + self.s.unwrap('device_segment_column_name')
                   + ' AS device_segment'
               ) if self.s.unwrap('has_device_segment') else '',
+              keyword_column_name=self.s.unwrap('keyword_column_name'),
               device_segment_column_name = (
                   ',\n'
                   + 'h.' + self.s.unwrap('device_segment_column_name')

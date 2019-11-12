@@ -24,6 +24,7 @@ gcloud services enable doubleclicksearch.googleapis.com
 gcloud services enable storage-component.googleapis.com
 gcloud services enable bigquery-json.googleapis.com
 gcloud services enable bigquerystorage.googleapis.com
+gcloud services enable bigquerydatatransfer.googleapis.com
 cmd="PATH=\$PATH:$HOME/.local/bin"
 if [[ $(grep -c "$cmd" $HOME/.bashrc) == 0 ]]
 then

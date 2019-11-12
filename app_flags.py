@@ -205,6 +205,13 @@ class AppSettings(settings.AbstractSettings):
                     after=self.hooks.map_historical_column,
                     conditional=lambda s: s['report_level'].value != 'campaign',
                 ),
+                'keyword_column_name': settings.SettingOption.create(
+                    self,
+                    'Keyword Column Name',
+                    default='keyword',
+                    conditional=lambda s: s['report_level'].value != 'campaign',
+                    after=self.hooks.map_historical_column,
+                )
             }, conditional=lambda s: s['has_historical_data'].value)
         ]
         return args
@@ -376,7 +383,7 @@ class Hooks:
             s.custom['blobs'].append(blob.name)
     def map_historical_column(self, setting: settings.SettingOption):
         settings = setting.settings
-        setting.value = setting.value.replace(' ', '_')
+        setting.value = re.sub(r'[^a-zA-Z0-9]', '_', setting.value)
         if 'historical_map' not in settings.custom:
             settings.custom['historical_map'] = {}
         settings.custom['historical_map'][setting.value] = setting.default
