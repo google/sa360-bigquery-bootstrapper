@@ -175,11 +175,6 @@ class Bootstrap:
             cprint('No historical file provided for {}'.format(advertiser),
                    'red')
             return
-        file = file_map[advertiser]
-        if file.startswith('gs://'):
-            file = file.replace('gs://{}/'.format(
-                self.s.unwrap('storage_bucket')), ''
-            )
         dataset_ref: bigquery.dataset.Dataset = DataSets.raw
         dataset: str = dataset_ref.dataset_id
         table_name = get_view_name(ViewTypes.HISTORICAL, advertiser)
@@ -206,7 +201,8 @@ class Bootstrap:
                 load_job = client.load_table_from_uri(
                     uri, table, job_config=job_config
                 )
-                logging.debug(load_job.result())
+                result = load_job.result()
+                logging.info("Job result: %s", result)
             cprint(
                 'Created table {}'.format(full_table_name),
                 'green'
@@ -222,6 +218,7 @@ class Bootstrap:
             if len(err.errors) > 0:
                 for e in err.errors:
                     cprint('- {}'.format(e['debugInfo']), 'red')
+            logging.info(traceback.format_exc())
             exit(1)
 
     @staticmethod
@@ -295,13 +292,13 @@ class CreateViews:
             try:
                 logging.debug('error:\n-----\n%s\n-----\n', err)
                 view = bigquery.Table(view_ref)
-                logging.debug('%s.%s', view.dataset_id, view.table_id)
+                logging.info('%s.%s', view.dataset_id, view.table_id)
                 view.view_query = view_query
-                self.client.create_table(view)
+                self.client.create_table(view, exists_ok=True)
                 cprint('+ created {}'.format(adv_view), 'green')
             except NotFound as err:
                 cprint('Error: {}'.format(str(err)), 'red')
-                logging.debug('error2:\n-----\n%s\n-----\n', err)
+                logging.info(traceback.format_exc())
         self.keyword_mapper(adv)
 
     def historical_conversions(self, advertiser):
