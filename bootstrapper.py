@@ -160,41 +160,6 @@ class Bootstrap:
         )
         return result
 
-    def guess_schema(self, file):
-        s_cli = self.storage_cli
-        bucket = s_cli.get_bucket(self.s.unwrap('storage_bucket'))
-        blob = bucket.blob(file)
-        blob.name = file
-        result = blob.download_as_string(s_cli, 0, 10000)
-        rows = result.decode_csv().split('\n')[0:2]
-        schema = []
-        data = list(csv.reader(rows, delimiter=','))
-        for col in range(len(data[0])):
-            key = data[0][col]
-            if key in self.settings.custom['historical_map']:
-                key = self.settings.custom['historical_map'][key]
-            else:
-                key: str = key.replace(' ', '_').lower()
-            val = data[1][col]
-            if val.isnumeric() and len(val) < 5:
-                schema.append(bigquery.SchemaField(
-                    key,
-                    'INT64',
-                ))
-            else:
-                try:
-                    parse_date(val)
-                    field = bigquery.SchemaField(
-                        key,
-                        'DATE',
-                    )
-                except ValueError:
-                    schema.append(bigquery.SchemaField(
-                        key,
-                        'STRING',
-                    ))
-        return schema
-
     def ensure_utf8(self) -> Blob:
         file_path = self.settings['file_path']
         dest_filename = file_path.value
@@ -227,7 +192,7 @@ class Bootstrap:
             dest=dest_filename,
             path=path,
             out_type=Decoder.SINGLE_FILE,
-            dict_map=dict_map
+            dict_map=dict_map,
         ).run()
         dest_blob = bucket.blob(dest_filename)
         dest_blob.upload_from_filename(result_dir)

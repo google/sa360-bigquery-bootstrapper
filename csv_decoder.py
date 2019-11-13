@@ -38,7 +38,7 @@ class Decoder(object):
     SEPARATE_FILES = 2
 
     def __init__(self, desired_encoding, path, dict_map,
-                 out_type=SINGLE_FILE, dest='out.csv'):
+                 out_type=SINGLE_FILE, dest='out.csv', callback=None):
         self.first = True  # ignore headers when False
         self.map: dict = {k.lower():v for k,v in dict_map.items()}
         self.dtypes = {k: str for k in self.map.keys()}
@@ -49,6 +49,7 @@ class Decoder(object):
         self._file_count = 0
         self.dir = None
         self.rows_opened: int = 0
+        self.callback = callback
 
     @property
     def filename(self):
@@ -68,6 +69,13 @@ class Decoder(object):
                 self.dir, self.dest
             )
         )
+
+    def guess_schema(self, df: pd.DataFrame):
+        for c in df:
+            column = df[c]
+            val = column[0]
+            if self.callback is not None:
+                self.callback(val)
 
     @property
     def time(self) -> str:
