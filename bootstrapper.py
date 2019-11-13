@@ -215,6 +215,7 @@ class Bootstrap:
             # if the table exists - then skip this part.
             client.get_table(full_table_name)
             cprint('Table {} exists. Skipping'.format(full_table_name), 'red')
+            return
         except NotFound as err:
             pass
 
