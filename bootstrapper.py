@@ -345,22 +345,22 @@ class CreateViews:
           INNER JOIN (
             SELECT keywordId,
                 keyword,
-                campaign_name,
+                campaign,
                 keywordMatchType,
                 adGroup,
-                account_name
+                account
             FROM `{project}`.`{views}`.`{keyword_mapper}`
             GROUP BY
                 keywordId,
                 keyword,
-                campaign_name,
-                account_name,
+                campaign,
+                account,
                 adGroup,
                 keywordMatchType
           ) a
             ON a.keyword=h.keyword
-            AND a.campaign=h.campaign
-            AND a.account=h.account
+            AND a.campaign=h.campaign_name
+            AND a.account=h.account_name
             AND a.adGroup=h.ad_group
             AND LOWER(a.keywordMatchType) = LOWER(h.match_type)
           GROUP BY
