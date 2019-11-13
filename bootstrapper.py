@@ -345,16 +345,16 @@ class CreateViews:
           INNER JOIN (
             SELECT keywordId,
                 keyword,
-                campaign,
+                campaign_name,
                 keywordMatchType,
                 adGroup,
-                account
+                account_name
             FROM `{project}`.`{views}`.`{keyword_mapper}`
             GROUP BY
                 keywordId,
                 keyword,
-                campaign,
-                account,
+                campaign_name,
+                account_name,
                 adGroup,
                 keywordMatchType
           ) a
@@ -515,8 +515,8 @@ class CreateViews:
             d.date, 
             m.keywordId, 
             m.keyword, 
-            m.campaign, 
-            m.account{deviceSegment},
+            m.campaign_name, 
+            m.account_name{deviceSegment},
             m.accountType""".format(
             view_data=self.s.unwrap('view_dataset'),
             keyword_mapper=views.get(ViewTypes.KEYWORD_MAPPER),
