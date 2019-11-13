@@ -339,8 +339,8 @@ class CreateViews:
             a.keywordId{deviceSegment},
             a.keywordMatchType MatchType,
             h.ad_group AdGroup,
-            {conversions},
-            {revenue}
+            {conversions} conversions,
+            {revenue} revenue
           FROM `{project}`.`{raw}`.`{historical_table_name}` h
           INNER JOIN (
             SELECT keywordId,
