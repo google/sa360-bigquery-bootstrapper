@@ -339,8 +339,8 @@ class CreateViews:
             a.keywordId{deviceSegment},
             a.keywordMatchType MatchType,
             h.ad_group AdGroup,
-            {conversions},
-            {revenue}
+            {conversions} conversions,
+            {revenue} revenue
           FROM `{project}`.`{raw}`.`{historical_table_name}` h
           INNER JOIN (
             SELECT keywordId,
@@ -359,8 +359,8 @@ class CreateViews:
                 keywordMatchType
           ) a
             ON a.keyword=h.keyword
-            AND a.campaign=h.campaign
-            AND a.account=h.account
+            AND a.campaign=h.campaign_name
+            AND a.account=h.account_name
             AND a.adGroup=h.ad_group
             AND LOWER(a.keywordMatchType) = LOWER(h.match_type)
           GROUP BY
@@ -515,7 +515,7 @@ class CreateViews:
             d.date, 
             m.keywordId, 
             m.keyword, 
-            m.campaign, 
+            m.campaign,
             m.account{deviceSegment},
             m.accountType""".format(
             view_data=self.s.unwrap('view_dataset'),
