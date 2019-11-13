@@ -17,8 +17,10 @@
 # products and are not formally supported.
 # ************************************************************************/
 import csv
+import os
 import traceback
 from datetime import datetime
+from typing import Union
 
 from absl import logging
 from dateutil.parser import parse as parse_date
@@ -31,10 +33,14 @@ from google.cloud import bigquery_datatransfer
 from google.cloud import storage
 from google.cloud.bigquery import Table
 from google.cloud.bigquery.dataset import Dataset
+from google.cloud.storage import Blob
+from google.cloud.storage import Bucket
 from google.protobuf.struct_pb2 import Struct
 from termcolor import cprint
 
-import app_flags
+import app_settings
+from csv_decoder import Decoder
+from flagmaker.settings import SettingOption
 from utilities import *
 from flagmaker.settings import AbstractSettings
 from flagmaker.settings import Config
@@ -46,19 +52,41 @@ class DataSets:
 
 
 class Bootstrap:
-    settings: AbstractSettings = None
+    settings: app_settings.AppSettings = None
     config: Config = None
+    storage_cli: storage.Client
+    bucket: Bucket
 
     def __init__(self):
-        self.config: Config = Config(app_flags.AppSettings)
+        self.config: Config[app_settings.AppSettings] = Config(
+            app_settings.AppSettings
+        )
         self.s = None
+
     def run(self):
         app.run(self.exec)
 
+    def get_storage_cli(self):
+        return self.settings.custom['storage_client']
+
+    def get_bucket(self) -> Bucket:
+        bucket_name = self.s.unwrap('storage_bucket')
+        try:
+            return self.storage_cli.get_bucket(bucket_name)
+        except NotFound:
+            cprint('Could not find bucket named ' + bucket_name, 'red',
+                   attrs=['bold'])
+            cprint('Please double-check existence, or remove the '
+                   'storage_bucket flag so we can help you create the storage '
+                   'bucket interactively.', 'red')
+            exit(1)
+
     def exec(self, args):
         try:
-            self.settings: AbstractSettings = self.config.get()
+            self.settings: app_settings.AppSettings = self.config.get()
             self.s = SettingUtil(self.settings)
+            self.storage_cli = self.get_storage_cli()
+            self.bucket = self.get_bucket()
             project = str(self.s.unwrap('gcp_project_name'))
             client = bigquery.Client(
                 project=project, location='US'
@@ -86,7 +114,7 @@ class Bootstrap:
 
     def load_datasets(self, client, project):
         for k, v in (('raw', 'raw_dataset'), ('views', 'view_dataset')):
-            dataset = str(self.settings[v])
+            dataset = self.settings[v].value
             dataset = Dataset.from_string('{0}.{1}'.format(project, dataset))
             try:
                 setattr(DataSets, k, client.get_dataset(dataset))
@@ -133,12 +161,12 @@ class Bootstrap:
         return result
 
     def guess_schema(self, file):
-        s_cli = self.settings.custom['storage_client']  # type: storage.Client
+        s_cli = self.storage_cli
         bucket = s_cli.get_bucket(self.s.unwrap('storage_bucket'))
         blob = bucket.blob(file)
         blob.name = file
         result = blob.download_as_string(s_cli, 0, 10000)
-        rows = result.decode().split('\n')[0:2]
+        rows = result.decode_csv().split('\n')[0:2]
         schema = []
         data = list(csv.reader(rows, delimiter=','))
         for col in range(len(data[0])):
@@ -167,14 +195,46 @@ class Bootstrap:
                     ))
         return schema
 
+    def ensure_utf8(self) -> Blob:
+        file_path = self.settings['file_path']
+        dest_filename = file_path.value
+        setting: SettingOption[app_settings.AppSettings] = file_path
+        s: app_settings.AppSettings = setting.settings
+        storage_cli = self.storage_cli
+        file_location = s['file_location'].value
+        bucket = self.bucket
+        now_str = datetime.now().strftime('%Y%m%d%H%m%S%f')
+        dict_map = {v: k for v,k in s.custom['historical_map'].items()}
+        if file_location == 'GCS Bucket':
+            file = bucket.blob(dest_filename)
+            path = dirname = '/tmp/in-{}/'.format(now_str)
+            os.mkdir(path)
+            if not file.exists():
+                files = list(bucket.list_blobs(prefix=dest_filename))
+            else:
+                files = [file]
+            for file in files:
+                file_parts = file.name.split('/')
+                if file_parts[-1] == '':
+                    continue
+                with open(dirname + file_parts[-1], 'w+b') as fh:
+                    file.download_to_file(fh, storage_cli)
+        else:
+            path = dest_filename
+        dest_filename = 'sa360-bq-{}.csv'.format(s['advertiser_id'])
+        result_dir = Decoder(
+            desired_encoding='utf-8',
+            dest=dest_filename,
+            path=path,
+            out_type=Decoder.SINGLE_FILE,
+            dict_map=dict_map
+        ).run()
+        dest_blob = bucket.blob(dest_filename)
+        dest_blob.upload_from_filename(result_dir)
+        return dest_blob
+
     def load_historical_tables(self, client, project, advertiser):
         s = self.settings
-        file_map = s.custom['file_map']
-        in_map = advertiser in file_map
-        if not in_map or not file_map[advertiser]:
-            cprint('No historical file provided for {}'.format(advertiser),
-                   'red')
-            return
         dataset_ref: bigquery.dataset.Dataset = DataSets.raw
         dataset: str = dataset_ref.dataset_id
         table_name = get_view_name(ViewTypes.HISTORICAL, advertiser)
@@ -185,7 +245,6 @@ class Bootstrap:
         )
         job_config = bigquery.LoadJobConfig()
         job_config.autodetect = True
-        job_config.skip_leading_rows = 1
         job_config.source_format = bigquery.ExternalSourceFormat.CSV
         try:
             # if the table exists - then skip this part.
@@ -196,13 +255,18 @@ class Bootstrap:
 
         try:
             table = dataset_ref.table(table_name)
-            for blob in s.custom['blobs']:
-                uri = 'gs://{}/{}'.format(self.s.unwrap('storage_bucket'), blob)
-                load_job = client.load_table_from_uri(
-                    uri, table, job_config=job_config
-                )
-                result = load_job.result()
-                logging.info("Job result: %s", result)
+            blob = self.bucket.blob('sa360-bq-{}.csv'.format(advertiser))
+            if not blob.exists() or self.s.unwrap('overwrite_storage_csv'):
+                blob = self.ensure_utf8()
+            uri = 'gs://{}/{}'.format(
+                self.s.unwrap('storage_bucket'),
+                blob.name
+            )
+            load_job = client.load_table_from_uri(
+                uri, table, job_config=job_config
+            )
+            result = load_job.result()
+            logging.info("Job result: %s", result)
             cprint(
                 'Created table {}'.format(full_table_name),
                 'green'
@@ -247,7 +311,7 @@ class CreateViews:
     settings: AbstractSettings = None
 
     def __init__(self, config, client, project, advertiser):
-        self.settings = config
+        self.settings: app_settings.AppSettings = config
         self.client = client
         self.project = project
         self.advertiser = advertiser
@@ -305,12 +369,12 @@ class CreateViews:
         views = ViewGetter(advertiser)
 
         sql = """SELECT 
-            h.{date} date,
+            h.date,
             a.keywordId{deviceSegment},
             a.keywordMatchType MatchType,
-            h.{adgroup_column_name} AdGroup,
-            {conversions} conversions,
-            {revenue} revenue
+            h.ad_group AdGroup,
+            {conversions},
+            {revenue}
           FROM `{project}`.`{raw}`.`{historical_table_name}` h
           INNER JOIN (
             SELECT keywordId,
@@ -328,49 +392,41 @@ class CreateViews:
                 adGroup,
                 keywordMatchType
           ) a
-            ON a.keyword=h.{keyword_column_name}
-            AND a.campaign=h.{campaign_column_name} 
-            AND a.account=h.{account_column_name}
-            AND a.adGroup=h.{adgroup_column_name}
-            AND LOWER(a.keywordMatchType) = LOWER(h.{keyword_match_type})
+            ON a.keyword=h.keyword
+            AND a.campaign=h.campaign
+            AND a.account=h.account
+            AND a.adGroup=h.ad_group
+            AND LOWER(a.keywordMatchType) = LOWER(h.match_type)
           GROUP BY
-            h.{date},
+            h.date,
             a.keywordId, 
             a.keyword, 
             a.keywordMatchType,
-            h.{adgroup_column_name},
+            h.ad_group,
             a.campaign{device_segment_column_name},
             a.account""".format(
-              date=self.s.unwrap('date_column_name'),
               project=self.s.unwrap('gcp_project_name'),
               deviceSegment=(
-                  ',\n' + 'h.'
-                  + self.s.unwrap('device_segment_column_name')
+                  ',\n' + 'h.device_segment'
                   + ' AS device_segment'
               ) if self.s.unwrap('has_device_segment') else '',
-              keyword_column_name=self.s.unwrap('keyword_column_name'),
               device_segment_column_name = (
                   ',\n'
                   + 'h.' + self.s.unwrap('device_segment_column_name')
               ) if self.s.unwrap('has_device_segment') else '',
               raw=self.s.unwrap('raw_dataset'),
-              adgroup_column_name=self.s.unwrap('adgroup_column_name'),
               views=self.s.unwrap('view_dataset'),
               historical_table_name=views.get(ViewTypes.HISTORICAL),
               keyword_mapper=views.get(ViewTypes.KEYWORD_MAPPER),
-              campaign_column_name=self.s.unwrap('campaign_column_name'),
-              account_column_name=self.s.unwrap('account_column_name'),
-              date_column_name=self.s.unwrap('date_column_name'),
-              keyword_match_type=self.s.unwrap('keyword_match_type'),
               conversions=aggregate_if(
                   Aggregation.SUM,
-                  self.s.unwrap('conversion_count_column'),
+                  'conversions',
                   'SUM(1)',
                   prefix='h',
               ),
               revenue=aggregate_if(
                   Aggregation.SUM,
-                  self.s.unwrap('revenue_column_name'),
+                  'revenue',
                   0,
                   prefix='h',
               ),

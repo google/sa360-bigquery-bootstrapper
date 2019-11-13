@@ -20,6 +20,9 @@ from abc import ABC
 from abc import abstractmethod
 from collections.abc import Iterable
 from enum import Enum
+from typing import Generic
+
+from typing import TypeVar
 
 
 class SettingOptionInterface(ABC, object):
@@ -93,11 +96,14 @@ class Value(object):
         return self.__value_set
 
 
-class SettingsInterface(ABC):
+T = TypeVar('T')
+
+
+class SettingsInterface(ABC, Generic[T]):
     custom = {}
 
     @abstractmethod
-    def load_settings(self):
+    def load_settings(self) -> T:
         pass
 
     @abstractmethod

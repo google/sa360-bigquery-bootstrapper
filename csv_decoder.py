@@ -34,22 +34,40 @@ from xlrd import XLRDError
 
 
 class Decoder(object):
-    def __init__(self, desired_encoding, path):
+    SINGLE_FILE = 1
+    SEPARATE_FILES = 2
+
+    def __init__(self, desired_encoding, path, dict_map,
+                 out_type=SINGLE_FILE, dest='out.csv'):
+        self.first = True  # ignore headers when False
+        self.map: dict = {k.lower():v for k,v in dict_map.items()}
+        self.dtypes = {k: str for k in self.map.keys()}
+        self.out_type = out_type
         self.desired_encoding = desired_encoding
         self.path = path
-        self.dest = None
+        self.dest = dest
         self._file_count = 0
+        self.dir = None
+        self.rows_opened: int = 0
 
     @property
-    def file_count(self):
+    def filename(self):
+        if self.out_type == Decoder.SINGLE_FILE:
+            return self.dest
         self._file_count += 1
         return self._file_count
 
     def run(self):
-        self.dest = '/tmp/updir-' + self.time
-        os.mkdir(self.dest)
+        self.dir = '/tmp/updir-' + self.time
+        os.mkdir(self.dir)
         Decoder.ChooseyDecoder(self, self.path).run()
-        return self.dest
+        return (
+            self.dir
+            if self.out_type != Decoder.SINGLE_FILE
+            else '{}/{}'.format(
+                self.dir, self.dest
+            )
+        )
 
     @property
     def time(self) -> str:
@@ -59,10 +77,6 @@ class Decoder(object):
         def __init__(self, parent: 'Decoder', path: str):
             self.path = path
             self.parent = parent
-
-        def open(self) -> bytes:
-            with open(self.path, 'rb') as fh:
-                return fh.read()
 
     class ChooseyDecoder(AbstractDecoder):
         def run(self):
@@ -88,31 +102,65 @@ class Decoder(object):
     class FileDecoder(AbstractDecoder):
         def run(self):
             try:
-                df = pd.read_excel(self.path)
-                with open('{}/{}.csv'.format(
-                    self.parent.dest, self.parent.file_count
-                ), 'wb') as fh:
-                    contents = bytes(
-                        df.to_csv(index=False), self.parent.desired_encoding
-                    )
-                    fh.write(contents)
-                    logging.info('Wrote to ' + self.path)
-                return
+                self.decode_excel()
             except XLRDError as err:
-                self.decode(self.open())
+                self.decode_csv()
                 return
 
-        def decode(self, file: bytes):
+        def decode_excel(self):
+            df: pd.DataFrame = pd.read_excel(
+                self.path,
+                dtype=self.parent.dtypes,
+            )
+            df.rename(columns=self.parent.map)
+            self.write(df)
+            logging.info('Wrote to ' + self.path)
+            return
+
+        def decode_csv(self):
             for encoding in ['utf-8', 'utf-16', 'latin-1']:
                 try:
-                    contents = self.decode_file(encoding, file)
-                    with open('{}/{}.csv'.format(
-                        self.parent.dest, self.parent.file_count
-                    ), 'wb') as fh:
-                        fh.write(contents)
+                    df = pd.read_csv(
+                        self.path,
+                        encoding=encoding,
+                        dtype=self.parent.dtypes,
+                    )
+                    self.write(df)
+                    logging.info('Decoded %s from %s',
+                                 self.path, encoding)
                     break
-                except UnicodeDecodeError:
-                    logging.info('Unicode error for ' + self.path)
+                except (UnicodeDecodeError, UnicodeError):
+                    if encoding == 'latin-1':
+                        raise
+                    logging.info(
+                        'Unicode error for %s with %s',
+                        self.path,
+                        encoding
+                    )
+
+        def write(self, df: pd.DataFrame):
+            def rename_columns(s: str):
+                l = s.lower()
+                return self.parent.map[l] if l in self.parent.map else l
+
+            doing_single_file = self.parent.out_type == Decoder.SINGLE_FILE
+            if doing_single_file:
+                write_method = 'a'
+                include_headers = self.parent.first
+                if self.parent.first:
+                    self.parent.first = False
+            else:
+                include_headers = True
+                write_method = 'w'
+            df.rename(rename_columns, inplace=True, copy=False, axis='columns')
+            self.parent.rows_opened += len(df.index)
+            df.to_csv(
+                '{}/{}'.format(self.parent.dir, self.parent.filename),
+                index=False,
+                header=include_headers,
+                mode=write_method,
+                columns=self.parent.map.values()
+            )
 
         def decode_file(self, encoding: str, file: bytes):
             return file.decode(encoding).encode(self.parent.desired_encoding)

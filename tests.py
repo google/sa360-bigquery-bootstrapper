@@ -17,16 +17,26 @@
 # products and are not formally supported.
 # ************************************************************************/
 import os
-
-from absl import flags
 import unittest
 
-import flagmaker.settings
-import app_flags
+import pandas as pd
+
+import app_settings
 from csv_decoder import Decoder
-from flagmaker.tests import TestSettings
 from utilities import ViewTypes
 from utilities import get_view_name
+
+
+class AppSettingsTest(unittest.TestCase):
+    def test_columns(self):
+        s = app_settings.AppSettings()
+        self.assertEqual(
+            s.columns['account_column_name'].default,
+            'account_name'
+        )
+        s.columns['account_column_name'].value = 'Account'
+        dict_map = {val.value:val.default for val in s.columns.values()}
+        self.assertIn('Account', dict_map)
 
 
 class UtilitiesTest(unittest.TestCase):
@@ -39,8 +49,15 @@ class UtilitiesTest(unittest.TestCase):
 
 class CSVDecoderTest(unittest.TestCase):
     def test_size(self):
-        output_dir = Decoder('utf-8', './testdata/dirA').run()
-        self.assertEqual(len(os.listdir(output_dir)), 7)
+        file = Decoder('utf-8', './testdata/dirA', map={
+            'A': 'only_column'
+        }).run()
+        self.assertTrue(os.path.isfile(file))
+        df: pd.DataFrame = pd.read_csv(file)
+        self.assertEqual(len(df.columns), 1)
+        self.assertTrue('only_column' in df)
+        desired_list = ['I','a','c','e','g','k','m']
+        self.assertListEqual(sorted(df['only_column'].values), desired_list)
 
 
 if __name__ == '__main__':

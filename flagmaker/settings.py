@@ -20,16 +20,16 @@ from collections.abc import Iterable
 from enum import EnumMeta
 from typing import ClassVar
 from typing import Dict
+from typing import Generic
 from typing import List
+from typing import TypeVar
 
 from absl import flags
 from prompt_toolkit import ANSI
 from prompt_toolkit import prompt
-from prompt_toolkit.completion import WordCompleter
-from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.shortcuts import CompleteStyle
-from termcolor import cprint
 from termcolor import colored
+from termcolor import cprint
 
 from flagmaker.building_blocks import list_to_string_list
 from flagmaker.exceptions import FlagMakerPromptInterruption
@@ -44,9 +44,11 @@ from .sanity import Validator
 
 FLAGS = flags.FLAGS
 
+T = TypeVar('T', bound=SettingsInterface)
 
-class SettingOption(SettingOptionInterface):
-    settings: SettingsInterface = None
+
+class SettingOption(SettingOptionInterface, Generic[T]):
+    settings: T = None
     default = None
     help = None
     method: callable = None
@@ -66,7 +68,7 @@ class SettingOption(SettingOptionInterface):
         self._value = Value()
 
     @classmethod
-    def create(cls, settings: SettingsInterface, helptext=None, default=None,
+    def create(cls, settings: T, helptext=None, default=None,
                method=flags.DEFINE_string, required=True, validation=None,
                conditional=None, after=None, prompt=None,
                include_in_interactive=True, options=None):
@@ -236,11 +238,12 @@ class SettingOption(SettingOptionInterface):
         return self.method
 
     def __str__(self):
-        return self.value if self.value is not None else ''
+        return self.value or ''
 
     def __repr__(self):
-        return '[{0}{1}]'.format(
-            self.help, ' (' + str(self.value) + ')' if self.value else ''
+        return '[{0}: {1}]'.format(
+            self.default,
+            str(self.value) if self.value else '',
         )
 
     def __bool__(self):
@@ -249,16 +252,13 @@ class SettingOption(SettingOptionInterface):
     def __index__(self):
         return self.value
 
-    def __getitem__(self, item):
+    def __getitem__(self, item) -> SettingOptionInterface:
         return self.value.__getitem__(item)
-
-
-SettingOptions = Dict[str, SettingOption]
 
 
 class SettingBlock:
     def __init__(self, block: str,
-                 settings: SettingOptions,
+                 settings: Dict[str, SettingOption],
                  conditional: callable = None):
         self.name = block
         self.settings = settings
@@ -288,7 +288,6 @@ class AbstractSettings(SettingsInterface):
                 s.set_value(init=FLAGS.get_flag_value(k, None))
                 self.flattened_args[k] = s
 
-    @property
     def load_settings(self):
         self.start()
         first = True
@@ -358,10 +357,10 @@ class AbstractSettings(SettingsInterface):
         return str(self.args)
 
 
-AbstractSettingsClass = ClassVar[AbstractSettings]
+AbstractSettingsClass = ClassVar[T]
 
 
-class Config(object):
+class Config(Generic[T]):
     """The entry point for setting the Settings class for an app.
 
     Example: Config(MySettingsClass)
@@ -369,15 +368,15 @@ class Config(object):
     This will bootstrap the settings class correctly.
     """
 
-    def __init__(self, s: AbstractSettingsClass):
-        self.s = s
+    def __init__(self, s: ClassVar[T]):
+        self.s: ClassVar[T] = s
         self.instance = None
-        self.instance: AbstractSettings = s()
+        self.instance: T = s()
         self.instance.install()
 
-    def get(self) -> AbstractSettings:
+    def get(self) -> T:
         if not FLAGS.is_parsed():
             raise FlagMakerConfigurationError('Do not call this '
                                               'method until after app.run()')
-        self.instance.load_settings
+        self.instance.load_settings()
         return self.instance

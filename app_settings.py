@@ -18,6 +18,7 @@
 # ************************************************************************/
 import re
 from enum import Enum
+from typing import Union
 
 from absl import flags
 from datetime import datetime
@@ -32,8 +33,12 @@ from google.cloud.storage import Bucket
 from prompt_toolkit.completion import PathCompleter
 from termcolor import cprint
 from prompt_toolkit import prompt
-from xlrd import open_workbook
+import pandas as pd
 import os
+
+from typing import Type
+
+from typing import Dict
 
 from csv_decoder import Decoder
 from flagmaker import settings
@@ -62,10 +67,21 @@ class AppSettings(settings.AbstractSettings):
 
     def __init__(self):
         self.hooks = Hooks()
+        self.columns: Dict[str, settings.SettingOption] = self.init_columns()
 
     def settings(self) -> List[settings.SettingBlock]:
         args = [
             settings.SettingBlock('General Settings', {
+                'overwrite_storage_csv': settings.SettingOption.create(
+                    self,
+                    'Override unified default storage CSV if it exists? '
+                    'this would be sa360-bq-[advertiser ID].csv. '
+                    'If it exists, then it will be re-used to save you '
+                    'money, unless you want to start from scratch.',
+                    method=flags.DEFINE_bool,
+                    default=False,
+                    include_in_interactive=False
+                ),
                 'gcp_project_name': settings.SettingOption.create(
                     self,
                     'GCP Project Name',
@@ -117,9 +133,8 @@ class AppSettings(settings.AbstractSettings):
                 ),
                 'file_path': settings.SettingOption.create(
                     self,
-                    'Historical Data CSV File Path',
-                    after=self.hooks.handle_csv_paths,
-                    method=flags.DEFINE_multi_string,
+                    'Historical Data CSV File Path '
+                    '(can be a directory of file)',
                     conditional=lambda s: s['has_historical_data'].value,
                 ),
                 'first_date_conversions': settings.SettingOption.create(
@@ -129,54 +144,18 @@ class AppSettings(settings.AbstractSettings):
                     conditional=lambda s: s['has_historical_data'].value,
                 )
             }),
-            settings.SettingBlock('Historical Columns', {
-                'account_column_name': settings.SettingOption.create(
-                    self,
-                    'Column name for the Account Name',
-                    default='account_name',
-                    after=self.hooks.map_historical_column,
-                ),
-                'campaign_column_name': settings.SettingOption.create(
-                    self,
-                    'Campaign Column Name for Historical Data '
-                    '(only if including historical data)',
-                    default='campaign_name',
-                    after=self.hooks.map_historical_column,
-                ),
-                'conversion_count_column': settings.SettingOption.create(
-                    self,
-                    'Specify the conversion column',
-                    default='conversions',
-                    after=self.hooks.map_historical_column,
-                ),
+            settings.SettingBlock('Data Gathering for Historical Data', {
                 'has_revenue_column': settings.SettingOption.create(
                     self,
                     'Does the report show revenue?',
                     default=True,
                     method=flags.DEFINE_bool,
                 ),
-                'revenue_column_name': settings.SettingOption.create(
-                    self,
-                    'Column name for revenue gained from conversion(s)\n '
-                    'If left blank, then no revenue will be recorded.\n'
-                    'Column Name',
-                    default='revenue',
-                    required=False,
-                    conditional=lambda s: s['has_revenue_column'].value,
-                    after=self.hooks.map_historical_column,
-                ),
                 'has_device_segment': settings.SettingOption.create(
                     self,
                     'Does the report have a device segment column?',
                     default=True,
                     method=flags.DEFINE_bool,
-                ),
-                'device_segment_column_name': settings.SettingOption.create(
-                    self,
-                    'Device Segment Column Name (if there is none, omit)',
-                    default='device_segment',
-                    conditional=lambda s: s['has_device_segment'].value,
-                    after=self.hooks.map_historical_column,
                 ),
                 'report_level': settings.SettingOption.create(
                     self,
@@ -186,38 +165,82 @@ class AppSettings(settings.AbstractSettings):
                     method=flags.DEFINE_enum,
                     options=ReportLevelOptions,
                 ),
-                'date_column_name': settings.SettingOption.create(
-                    self,
-                    'Column name for the Date Value',
-                    default='date',
-                    after=self.hooks.map_historical_column,
-                ),
-                'adgroup_column_name': settings.SettingOption.create(
-                    self,
-                    'Column name for the ad group name',
-                    default='ad_group_name',
-                    conditional=lambda s: s['report_level'].value != 'campaign',
-                    after=self.hooks.map_historical_column,
-                ),
-                'keyword_match_type': settings.SettingOption.create(
-                    self,
-                    'Keyword Match Type Column '
-                    '(omit if uploading a campaign-level report)',
-                    default='match_type',
-                    after=self.hooks.map_historical_column,
-                    conditional=lambda s: s['report_level'].value != 'campaign',
-                ),
-                'keyword_column_name': settings.SettingOption.create(
-                    self,
-                    'Keyword Column Name',
-                    default='keyword',
-                    conditional=lambda s: s['report_level'].value != 'campaign',
-                    after=self.hooks.map_historical_column,
-                )
-            }, conditional=lambda s: s['has_historical_data'].value)
+            }, conditional=lambda s: s['has_historical_data'].value),
+            settings.SettingBlock(
+                'Historical Data Columns',
+                self.columns,
+                conditional=lambda s: s['has_historical_data'].value
+            ),
         ]
         return args
 
+    def init_columns(self) -> dict:
+        return {
+            'account_column_name': settings.SettingOption.create(
+                self,
+                'Column name for the Account Name',
+                default='account_name',
+                after=self.hooks.map_historical_column,
+            ),
+            'campaign_column_name': settings.SettingOption.create(
+                self,
+                'Campaign Column Name for Historical Data '
+                '(only if including historical data)',
+                default='campaign_name',
+                after=self.hooks.map_historical_column,
+            ),
+            'conversion_count_column': settings.SettingOption.create(
+                self,
+                'Specify the conversion column',
+                default='conversions',
+                after=self.hooks.map_historical_column,
+            ),
+            'revenue_column_name': settings.SettingOption.create(
+                self,
+                'Column name for revenue gained from conversion(s)\n '
+                'If left blank, then no revenue will be recorded.\n'
+                'Column Name',
+                default='revenue',
+                required=False,
+                conditional=lambda s: s['has_revenue_column'].value,
+                after=self.hooks.map_historical_column,
+            ),
+            'device_segment_column_name': settings.SettingOption.create(
+                self,
+                'Device Segment Column Name (if there is none, omit)',
+                default='device_segment',
+                conditional=lambda s: s['has_device_segment'].value,
+                after=self.hooks.map_historical_column,
+            ),
+            'date_column_name': settings.SettingOption.create(
+                self,
+                'Column name for the Date Value',
+                default='date',
+                after=self.hooks.map_historical_column,
+            ),
+            'adgroup_column_name': settings.SettingOption.create(
+                self,
+                'Column name for the ad group name',
+                default='ad_group',
+                conditional=lambda s: s['report_level'].value != 'campaign',
+                after=self.hooks.map_historical_column,
+            ),
+            'keyword_match_type': settings.SettingOption.create(
+                self,
+                'Keyword Match Type Column '
+                '(omit if uploading a campaign-level report)',
+                default='match_type',
+                after=self.hooks.map_historical_column,
+                conditional=lambda s: s['report_level'].value != 'campaign',
+            ),
+            'keyword_column_name': settings.SettingOption.create(
+                self,
+                'Keyword Column Name',
+                default='keyword',
+                conditional=lambda s: s['report_level'].value != 'campaign',
+                after=self.hooks.map_historical_column,
+            )
+        }
 
 class Hooks:
     """Convenience class to add all hooks
@@ -300,93 +323,8 @@ class Hooks:
         result += '\nc: Create New Bucket'
         return result
 
-    def get_file_paths(self, setting: settings.SettingOption):
-        """
-        :param setting: SettingOption object
-        :raise FlagMakerPromptInterruption Returns '1' interrupting the prompt
-               if there is only one valid answer.
-        :return: Prompt string
-        """
-        s = setting.settings
-        advertisers = s['advertiser_id'].value
-
-        cprint('If in storage, provide a full URL starting with gs://. '
-               'Otherwise, drag and drop the file(s) here '
-               'and just specify the file name(s).\n'
-               'You can leave any value without historical data'
-               'blank.', 'blue')
-        if not isinstance(advertisers, list) and len(advertisers) > 1:
-            raise FlagMakerPromptInterruption(value='1')
-        return (
-            'Do you want to:\n' +
-            '1. Enter each value separately?\n'
-            '2. Enter comma separated values to map each advertiser ID'
-        )
-
-    def handle_csv_paths(self, setting: settings.SettingOption):
-        choice = setting.value
-        advertiser = setting.settings['advertiser_id'].value
-        if isinstance(choice, list):
-            file_map = {}
-            for i in range(len(choice)):
-                option = choice[i]
-                file_map[advertiser] = option
-                if option != '':
-                    self.ensure_utf8(setting, option)
-            setting.settings.custom['file_map'] = file_map
-            return True
-        options = []
-        if not choice.isnumeric():
-            options = choice.split(',')
-
-    def ensure_utf8(self, setting: settings.SettingOption, filename: str):
-        s = setting.settings
-        bucket_name = s['storage_bucket'].value
-        file_location = s['file_location'].value
-        bucket: Bucket = None
-        try:
-            bucket = self.storage.get_bucket(bucket_name)
-        except NotFound:
-            cprint('Could not find bucket named ' + bucket_name, 'red',
-                   attrs=['bold'])
-            cprint('Please double-check existence, or remove the '
-                   'storage_bucket flag so we can help you create the storage '
-                   'bucket interactively.', 'red')
-            exit(1)
-        local = False
-        if file_location == 'GCS Bucket':
-            file = bucket.blob(filename)
-            path = dirname = '/tmp/in-{}/'.format(str(
-                datetime.now().strftime('%Y%m%d%H%m%S%f')
-            ))
-            os.mkdir(path)
-            if not file.exists():
-                files = list(bucket.list_blobs(prefix=filename))
-                logging.info('Files: %s', files)
-                single = False
-                for file in files:
-                    file_parts = file.name.split('/')
-                    with open(dirname + file_parts[-1], 'w+b') as fh:
-                        file.download_to_file(fh, self.storage)
-                        file.delete()
-            else:
-                files = [file]
-                single = True
-        else:  #todo(seancjones: Make sure this section below works)
-            single = not os.path.isdir(filename)
-            path = filename
-        result_dir = Decoder(desired_encoding='utf-8', path=path).run()
-        s.custom['blobs'] = []
-        for file in os.listdir(result_dir):
-            if single:
-                blob = bucket.blob(filename)
-            else:
-                blob = bucket.blob(filename + '/' + file)
-            blob.upload_from_filename(result_dir + '/' + file)
-            s.custom['blobs'].append(blob.name)
     def map_historical_column(self, setting: settings.SettingOption):
         settings = setting.settings
-        setting.value = re.sub(r'[^a-zA-Z0-9]', '_', setting.value)
         if 'historical_map' not in settings.custom:
             settings.custom['historical_map'] = {}
         settings.custom['historical_map'][setting.value] = setting.default
