@@ -14,13 +14,8 @@ recommended way to install is by clicking the button below and following the tut
 [![Open in Cloud Shell](http://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fgoogle%2Fsa360-bigquery-bootstrapper&cloudshell_tutorial=docs%2Ftutorial.md)
 
 ## How to use
+ 
+The tutorial provides step-by-step guides on how to run this script. 
+You can access within cloudshell by running:
 
-First install dependencies:
-
-    source startup.sh
-    
-The tutorial provides step-by-step guides on how to run this command. Outside of that,
-the most helpful way to see what is possible is by running the following command:
-
-    pipenv run python run.py --help
-    
+    cloudshell launch-tutorial -d docs/tutorial.md

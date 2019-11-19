@@ -36,6 +36,8 @@ from google.cloud.bigquery.dataset import Dataset
 from google.cloud.storage import Blob
 from google.cloud.storage import Bucket
 from google.protobuf.struct_pb2 import Struct
+from googleapiclient import discovery
+from googleapiclient.errors import HttpError
 from termcolor import cprint
 
 import app_settings
@@ -98,6 +100,7 @@ class Bootstrap:
             for advertiser in advertisers:
                 cprint('Advertiser ID: {}'.format(advertiser),
                        'blue', attrs=['bold', 'underline'])
+                self.load_service(project)
                 self.load_transfers(client, project, advertiser)
                 self.load_historical_tables(client, project, advertiser)
                 CreateViews(self.settings, client, project, advertiser).run()
@@ -111,6 +114,33 @@ class Bootstrap:
             )
             cprint(str(err), 'red')
             logging.debug('%s\n%s', err.errors, traceback.format_exc())
+
+    def load_service(self, project):
+        def create_service_account(project_id, name, display_name):
+            service = discovery.build('iam', 'v1')
+
+            my_service_account = service.projects().serviceAccounts().create(
+                name='projects/' + project_id,
+                body={
+                    'accountId': name,
+                    'serviceAccount': {
+                        'displayName': display_name
+                    }
+                }).execute()
+            key = service.projects().serviceAccounts().keys().create(
+                name='projects/-/serviceAccounts/' + my_service_account['email'], body={}
+            ).execute()
+            cprint('Created service account: ' + my_service_account['email'])
+            return my_service_account
+
+        try:
+            create_service_account(
+                project, 
+                'bq-bootstrapper', 
+                'BigQuery Bootstrapper Service Account'
+            )
+        except HttpError:
+            return
 
     def load_datasets(self, client, project):
         for k, v in (('raw', 'raw_dataset'), ('views', 'view_dataset')):

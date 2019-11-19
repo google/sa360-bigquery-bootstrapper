@@ -2,6 +2,13 @@
 
 ## Walkthrough
 
+### Select your cloud project
+
+Select an existing Google Cloud project or create a new one.
+
+<walkthrough-project-billing-setup key="project-id">
+</walkthrough-project-billing-setup>
+
 ### License
 
 Copyright 2019 Google Inc.
@@ -21,12 +28,19 @@ limitations under the License.
 Note that these code samples being shared are not official Google
 products and are not formally supported.
 
-## Select your cloud project
 
-Select an existing Google Cloud project or create a new one.
+## Important Steps
 
-<walkthrough-project-billing-setup key="project-id">
-</walkthrough-project-billing-setup>
+### Historical Data
+Have historical data? You have two choices for how to upload it:
+1. Already have a storage bucket? 
+Upload a folder or single file with your historical data through 
+[Google Cloud Storage](https://storage.cloud.google.com/home/dashboard?project={{project-id}})
+using the storage bucket you will choose in the interactive setup.
+2. No storage bucket yet? This script can set it up for you.
+Simply drag an archive file (*.zip, *.tar, *.tar.gz), a folder or a file into
+the terminal below. A notice will display saying "Drop files here to upload"
+when you drag a file over the terminal.
 
 ## Set project ID
 
