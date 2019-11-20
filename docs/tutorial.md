@@ -62,16 +62,7 @@ Now we will run the deploy script. It will be interactive, so be sure to follow 
 pipenv run python run.py --gcp_project_name={{project-id}} --interactive
 ```
 
-You can copy the above command into the interactive shell below (or click on the **>** icon and then press enter below)
-
-### Prompts
-
-You will be prompted to answer many questions.
-To see all prompts and hints you can run the command:
-
-    pipenv run python.py --help
-
-You can also fill in flags using this to avoid the interactive prompts.
+You can copy the above command into the interactive shell below (or click on the **>** icon and then press enter below).
 
 ### Check your columns
 

@@ -16,6 +16,9 @@
 # Note that these code samples being shared are not official Google
 # products and are not formally supported.
 # ************************************************************************/
+import os
+import yaml
+
 from collections.abc import Iterable
 from enum import EnumMeta
 from typing import ClassVar
@@ -47,9 +50,15 @@ FLAGS = flags.FLAGS
 T = TypeVar('T', bound=SettingsInterface)
 
 
+class SettingConfig(object):
+    cache_file: str = '{}/.sa360bq'.format(os.environ['HOME'])
+    cache_dict: dict = {}
+
+
 class SettingOption(SettingOptionInterface, Generic[T]):
     settings: T = None
     default = None
+    cache = None
     help = None
     method: callable = None
     _value: Value = None
@@ -94,9 +103,10 @@ class SettingOption(SettingOptionInterface, Generic[T]):
                 if self._options is not None else None)
 
     def get_prompt(self, k):
+        d = self.get_default_or_cache()
         default = ' [default={0}]'.format(
-            self.default
-        ) if self.default is not None else ''
+            d if not isinstance(d, bool) else int(d)
+        ) if d is not None else ''
         prompt_val = ''
         if self.prompt is not None:
             prompt_val += '\n'
@@ -136,6 +146,14 @@ class SettingOption(SettingOptionInterface, Generic[T]):
 
     @value.setter
     def value(self, value):
+        while True:
+            try:
+                self._set_value(value)
+                break
+            except FlagMakerConfigurationError as err:
+                cprint(str(err), 'red')
+
+    def _set_value(self, value):
         if value is None:
             self._value.set_val(None)
             return
@@ -165,13 +183,21 @@ class SettingOption(SettingOptionInterface, Generic[T]):
             self.called[(self, self.after)] = True
             self.after(self)
 
-    def set_value(self, value: str = '', ask: str = '', init: str = ''):
+    def get_default_or_cache(self) -> str:
+        if self.cache is not None:
+            default_or_cache = self.cache
+        else:
+            default_or_cache = self.default
+        return default_or_cache
+
+    def set_value(self, key: str = '', value: str = '', 
+                  ask: str = '', init: str = ''):
         while True:
             num_opts = int(value != '') + int(ask != '') + int(init != '')
             if num_opts != 1:
                 raise FlagMakerInputError('Need to choose either '
                                           'init, value or ask')
-
+            default_or_cache = self.get_default_or_cache()
             if init is None:
                 return
             elif init != '':
@@ -194,10 +220,10 @@ class SettingOption(SettingOptionInterface, Generic[T]):
                     kwargs['complete_style'] = CompleteStyle.READLINE_LIKE
                     selection = prompt(ANSI(ask), **kwargs)
                     if selection == '':
-                        val = self.default
+                        val = default_or_cache
                     else:
                         val = self.options[int(selection)-1]
-                elif self.method  == flags.DEFINE_multi_string:
+                elif self.method == flags.DEFINE_multi_string:
                     val = []
                     i = 0
                     while True:
@@ -210,14 +236,12 @@ class SettingOption(SettingOptionInterface, Generic[T]):
                         val.append(res)
                 else:
                     val = prompt(ANSI(ask + ": "), **kwargs)
-                if val == '' and self.default is not None:
-                    self.value = self.default
+                if val == '' and default_or_cache is not None:
+                    self.value = default_or_cache
                 else:
-                    try:
-                        self.value = val
-                    except FlagMakerConfigurationError as err:
-                        cprint(str(err), 'red')
-                        continue
+                    self.value = val
+                if self.value is not None:
+                    SettingConfig.cache_dict[key] = self.value
             else:
                 self.value = value
             if not Validator.validate(self) or self._error:
@@ -274,7 +298,6 @@ class AbstractSettings(SettingsInterface):
 
     Loaded from the Config class. Used to generate flags for an app.
     """
-
     args: List[SettingBlock] = None
     flattened_args: dict = {}
 
@@ -292,14 +315,24 @@ class AbstractSettings(SettingsInterface):
         self.start()
         first = True
         interactive_mode = self.args[0].settings.pop('interactive')
+        cache: dict = {}
+        if os.path.exists(SettingConfig.cache_file):
+            with open(SettingConfig.cache_file, 'r') as fh:
+                cache = yaml.load(
+                    fh.read(), Loader=yaml.CLoader
+                ) or {}
+            os.remove(SettingConfig.cache_file)
+
         for block in self.args:
             header_shown = False
             if block.conditional is not None and not block.conditional(self):
                 continue
             for k, setting in block.settings.items():
+                setting.cache = cache[k] if k in cache else None
+
                 if setting.maybe_needs_input():
                     if not interactive_mode and setting.default:
-                        setting.set_value(init=setting.default)
+                        setting.set_value(k, init=setting.default)
                         continue
                     if first:
                         cprint('Interactive Setup', attrs=['bold', 'underline'])
@@ -313,9 +346,13 @@ class AbstractSettings(SettingsInterface):
                         header_shown = True
                     if setting.include_in_interactive:
                         try:
-                            setting.set_value(ask=setting.get_prompt(k))
+                            setting.set_value(k, ask=setting.get_prompt(k))
                         except FlagMakerPromptInterruption as err:
-                            setting.set_value(value=err.value)
+                            setting.set_value(k, value=err.value)
+        with open(SettingConfig.cache_file, 'w+') as fh:
+            fh.write(yaml.dump(
+                SettingConfig.cache_dict, Dumper=yaml.CDumper
+            ))
         return self
 
     def assign_flags(self) -> flags:
@@ -356,6 +393,15 @@ class AbstractSettings(SettingsInterface):
     def __repr__(self):
         return str(self.args)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, err, value, traceback):
+        with open(SettingConfig.cache_file, 'a+') as fh:
+            fh.write(yaml.dump(
+                SettingConfig.cache_dict, Dumper=yaml.CDumper
+            ))
+
 
 AbstractSettingsClass = ClassVar[T]
 
@@ -370,13 +416,15 @@ class Config(Generic[T]):
 
     def __init__(self, s: ClassVar[T]):
         self.s: ClassVar[T] = s
-        self.instance = None
-        self.instance: T = s()
+        self.instance = s()
         self.instance.install()
 
     def get(self) -> T:
         if not FLAGS.is_parsed():
-            raise FlagMakerConfigurationError('Do not call this '
-                                              'method until after app.run()')
-        self.instance.load_settings()
+            raise FlagMakerConfigurationError(
+                'Do not call this '
+                'method until after app.run()'
+            )
+        with self.instance as instance:  
+            instance.load_settings()
         return self.instance

@@ -112,10 +112,7 @@ class AppSettings(settings.AbstractSettings):
                     self,
                     'Include Historical Data?\n'
                     'Note: This will be true as long as any advertisers '
-                    'are going to have historical data included.\nIf you are '
-                    'uploading multiple advertisers, any of them with '
-                    'historical data should have the same format. If not, '
-                    'upload individual advertisers\nInput',
+                    'are going to have historical data included.',
                     method=flags.DEFINE_boolean,
                 ),
                 'storage_bucket': settings.SettingOption.create(
@@ -242,6 +239,7 @@ class AppSettings(settings.AbstractSettings):
             )
         }
 
+
 class Hooks:
     """Convenience class to add all hooks
 
@@ -267,25 +265,25 @@ class Hooks:
 
         while True:
             if 'buckets' not in s.custom:
-                return True
+                break
             if setting.value.isnumeric():
                 val = int(setting.value)
                 if val <= len(s.custom['buckets']):
                     value = s.custom['buckets'][val - 1].name
                     setting.value = value
-                    return True
+                    break
                 else:
                     raise FlagMakerConfigurationError('Invalid selection')
             elif setting.value == 'c':
-                setting.value = prompt('Select project name: ')
-            elif not ChooseAnother.toggle:
+                setting.value = prompt('Select new bucket name: ')
+            elif not ChooseAnother.toggle and setting.default is None:
                 raise FlagMakerConfigurationError('Select a valid option')
             if not setting:
-                return True
+                break
             ChooseAnother.toggle = False
             try:
                 setting.value = self.storage.get_bucket(setting.value).name
-                return True
+                break
             except exceptions.NotFound as e:
                 r = prompt(
                     'Cannot find bucket {0}. Create [y/n]? '.format(setting)
@@ -313,6 +311,14 @@ class Hooks:
                 setting.value = prompt(
                     'Press Ctrl+C to cancel or choose a different input: '
                 )
+        cprint('Add any files/folders to:', attrs=['bold'])
+        cprint(
+            'https://console.cloud.google.com/'
+            'storage/browser/{}?project={}'.format(
+                setting.value,
+                s['gcp_project_name'].value
+            ), 
+            attrs=['bold', 'underline'])
 
     def bucket_options(self, setting: settings.SettingOption):
         s = setting.settings
@@ -321,6 +327,9 @@ class Hooks:
         result = '\n'.join(['{}: {}'.format(b+1, buckets[b])
                             for b in range(bucket_size)])
         result += '\nc: Create New Bucket'
+        default = setting.get_default_or_cache()
+        if default is not None and default > '':
+            result += '\n[default={}]'.format(default)
         return result
 
     def map_historical_column(self, setting: settings.SettingOption):
@@ -334,7 +343,7 @@ class Hooks:
             location: str = setting.settings['location'].value
             try:
                 value = datetime.strptime(setting.value, '%Y-%m-%d')
-            except ValueError:
+            except Value:
                 kwargs = {}
                 kwargs['dayfirst'] = not location.lower().startswith('us')
                 value = parse_date(setting.value, **kwargs)

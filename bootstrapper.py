@@ -43,6 +43,7 @@ from termcolor import cprint
 import app_settings
 from csv_decoder import Decoder
 from flagmaker.settings import SettingOption
+from prompt_toolkit import prompt
 from utilities import *
 from flagmaker.settings import AbstractSettings
 from flagmaker.settings import Config
@@ -94,17 +95,13 @@ class Bootstrap:
                 project=project, location='US'
             )  # type : bigquery.Client
             self.load_datasets(client, project)
-            advertisers = self.s.unwrap('advertiser_id')
-            if not isinstance(advertisers, list):
-                advertisers = [advertisers]
-            for advertiser in advertisers:
-                cprint('Advertiser ID: {}'.format(advertiser),
-                       'blue', attrs=['bold', 'underline'])
-                self.load_service(project)
-                self.load_transfers(client, project, advertiser)
-                self.load_historical_tables(client, project, advertiser)
-                CreateViews(self.settings, client, project, advertiser).run()
-
+            advertiser = str(self.s.unwrap('advertiser_id'))
+            cprint('Advertiser ID: {}'.format(advertiser),
+                   'blue', attrs=['bold', 'underline'])
+            self.load_service(project)
+            self.load_transfers(client, project, advertiser)
+            self.load_historical_tables(client, project, advertiser)
+            CreateViews(self.settings, client, project, advertiser).run()
         except BadRequest as err:
             cprint(
                 'Error. Please ensure you have enabled all requested '
@@ -169,8 +166,8 @@ class Bootstrap:
                 'cyan'
             )
             return config
-        params['agency_id'] = self.s.unwrap('agency_id')
-        params['advertiser_id'] = advertiser
+        params['agency_id'] = str(self.s.unwrap('agency_id'))
+        params['advertiser_id'] = str(advertiser)
         params['include_removed_entities'] = False
         config = {
             'display_name': display_name,
@@ -216,7 +213,7 @@ class Bootstrap:
                     file.download_to_file(fh, storage_cli)
         else:
             path = dest_filename
-        dest_filename = 'sa360-bq-{}.csv'.format(s['advertiser_id'])
+        dest_filename = 'sa360-bq-{}.csv'.format(s['advertiser_id'].value)
         result_dir = Decoder(
             desired_encoding='utf-8',
             dest=dest_filename,
@@ -239,13 +236,32 @@ class Bootstrap:
             table_name,
         )
         job_config = bigquery.LoadJobConfig()
+        job_config.field_delimiter = ','
+        job_config.quote = '""'
         job_config.autodetect = True
         job_config.source_format = bigquery.ExternalSourceFormat.CSV
         try:
             # if the table exists - then skip this part.
-            client.get_table(full_table_name)
-            cprint('Table {} exists. Skipping'.format(full_table_name), 'red')
-            return
+            if not self.s.unwrap('overwrite_storage_csv'):
+                client.get_table(full_table_name)
+                if self.s.unwrap('interactive'):
+                    while True:
+                        res = prompt('Table {} exists. '.format(full_table_name)
+                                     + 'Replace with new data? [y/N] ')
+                        if res.lower() == 'y' or res == '1':
+                            client.delete_table(full_table_name)
+                            break
+                        else:
+                            return
+                else:
+                    cprint(
+                        'Table {} exists. Skipping'.format(
+                            full_table_name
+                        ), 'red'
+                    )
+                return
+            else:
+                client.delete_table(full_table_name)
         except NotFound as err:
             pass
 
@@ -334,7 +350,7 @@ class CreateViews:
                 )
 
     def view(self, view_name: ViewTypes, func_name):
-        adv = self.s.unwrap('advertiser_id')
+        adv = str(self.s.unwrap('advertiser_id'))
         logging.debug(view_name.value)
         adv_view = get_view_name(view_name, adv)
         view_ref = DataSets.views.table(adv_view)
