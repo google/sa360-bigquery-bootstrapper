@@ -19,6 +19,8 @@
 import os
 import yaml
 
+from yaml.parser import ParserError
+
 from collections.abc import Iterable
 from enum import EnumMeta
 from typing import ClassVar
@@ -317,11 +319,14 @@ class AbstractSettings(SettingsInterface):
         interactive_mode = self.args[0].settings.pop('interactive')
         cache: dict = {}
         if os.path.exists(SettingConfig.cache_file):
-            with open(SettingConfig.cache_file, 'r') as fh:
-                cache = yaml.load(
-                    fh.read(), Loader=yaml.CLoader
-                ) or {}
-            os.remove(SettingConfig.cache_file)
+            try:
+                with open(SettingConfig.cache_file, 'r') as fh:
+                    cache = yaml.load(
+                        fh.read(), Loader=yaml.Loader
+                    ) or {}
+            except ParserError:
+                cache = {}
+                os.remove(SettingConfig.cache_file)
 
         for block in self.args:
             header_shown = False
@@ -351,7 +356,7 @@ class AbstractSettings(SettingsInterface):
                             setting.set_value(k, value=err.value)
         with open(SettingConfig.cache_file, 'w+') as fh:
             fh.write(yaml.dump(
-                SettingConfig.cache_dict, Dumper=yaml.CDumper
+                SettingConfig.cache_dict, Dumper=yaml.Dumper
             ))
         return self
 
@@ -399,7 +404,7 @@ class AbstractSettings(SettingsInterface):
     def __exit__(self, err, value, traceback):
         with open(SettingConfig.cache_file, 'a+') as fh:
             fh.write(yaml.dump(
-                SettingConfig.cache_dict, Dumper=yaml.CDumper
+                SettingConfig.cache_dict, Dumper=yaml.Dumper
             ))
 
 

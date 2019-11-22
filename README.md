@@ -42,4 +42,5 @@ Currently there are no publicly available templates.
 
 ## CHANGES
 
-2019-11-22 - Allow overwriting of existing Historical table by passing the `--overwrite-storage-csv` option
+2019-11-22 - Allow overwriting of existing Historical table 
+by passing the `--overwrite_storage_csv` option
