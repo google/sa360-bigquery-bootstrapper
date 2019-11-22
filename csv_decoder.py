@@ -26,8 +26,9 @@ import os
 import shutil
 import tarfile
 import zipfile
-from datetime import datetime
 
+from termcolor import cprint
+from datetime import datetime
 import pandas as pd
 from absl import logging
 from xlrd import XLRDError
@@ -40,7 +41,7 @@ class Decoder(object):
     def __init__(self, desired_encoding, path, dict_map,
                  out_type=SINGLE_FILE, dest='out.csv', callback=None):
         self.first = True  # ignore headers when False
-        self.map: dict = {k.lower():v for k,v in dict_map.items()}
+        self.map: dict = {k.lower():v for k, v in dict_map.items()}
         self.dtypes = {k: str for k in self.map.keys()}
         self.out_type = out_type
         self.desired_encoding = desired_encoding
@@ -59,8 +60,9 @@ class Decoder(object):
         return self._file_count
 
     def run(self):
-        self.dir = '/tmp/updir-' + self.time
-        os.mkdir(self.dir)
+        self.dir = '/tmp/sa-bq-updir'
+        if not os.path.exists(self.dir):
+            os.mkdir(self.dir)
         Decoder.ChooseyDecoder(self, self.path).run()
         return (
             self.dir
@@ -69,6 +71,12 @@ class Decoder(object):
                 self.dir, self.dest
             )
         )
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        os.remove(self.dir + '/' + self.dest)
 
     def guess_schema(self, df: pd.DataFrame):
         for c in df:
@@ -89,12 +97,16 @@ class Decoder(object):
     class ChooseyDecoder(AbstractDecoder):
         def run(self):
             if os.path.isdir(self.path):
+                cprint('Decoding directory')
                 return Decoder.DirectoryDecoder(self.parent, self.path).run()
             elif self.path.endswith('.csv') or self.path.endswith('.xlsx'):
+                cprint('Decoding file')
                 return Decoder.FileDecoder(self.parent, self.path).run()
             elif tarfile.is_tarfile(self.path):
+                cprint('Unpacking tar file')
                 return Decoder.TarfileDecoder(self.parent, self.path).run()
             elif zipfile.is_zipfile(self.path):
+                cprint('Unzipping zip file')
                 return Decoder.ZipfileDecoder(self.parent, self.path).run()
             else:
                 logging.info('Skipping ' + self.path)
@@ -135,7 +147,7 @@ class Decoder(object):
                     )
                     self.write(df)
                     logging.info('Decoded %s from %s',
-                                 self.path, encoding)
+                                 self.path.replace('//', '/'), encoding)
                     break
                 except (UnicodeDecodeError, UnicodeError):
                     if encoding == 'latin-1':
@@ -162,6 +174,10 @@ class Decoder(object):
                 write_method = 'w'
             df.rename(rename_columns, inplace=True, copy=False, axis='columns')
             self.parent.rows_opened += len(df.index)
+            cprint(
+                '+ Stored a file {}'.format(self.parent.filename), 
+                'green'
+            )
             df.to_csv(
                 '{}/{}'.format(self.parent.dir, self.parent.filename),
                 index=False,

@@ -17,6 +17,8 @@ python-dateutil = "*"
 prompt_toolkit = "*"
 pandas = "*"
 xlrd = "*"
+google-api-python-client = "*"
+pyyaml = "*"
 
 [requires]
 python_version = "3"

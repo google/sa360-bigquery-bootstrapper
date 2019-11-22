@@ -20,6 +20,7 @@ import csv
 import os
 import traceback
 from datetime import datetime
+import shutil
 from typing import Union
 
 from absl import logging
@@ -36,11 +37,14 @@ from google.cloud.bigquery.dataset import Dataset
 from google.cloud.storage import Blob
 from google.cloud.storage import Bucket
 from google.protobuf.struct_pb2 import Struct
+from googleapiclient import discovery
+from googleapiclient.errors import HttpError
 from termcolor import cprint
 
 import app_settings
 from csv_decoder import Decoder
 from flagmaker.settings import SettingOption
+from prompt_toolkit import prompt
 from utilities import *
 from flagmaker.settings import AbstractSettings
 from flagmaker.settings import Config
@@ -62,6 +66,7 @@ class Bootstrap:
             app_settings.AppSettings
         )
         self.s = None
+        self.path = '/tmp/in-upload/'
 
     def run(self):
         app.run(self.exec)
@@ -92,16 +97,13 @@ class Bootstrap:
                 project=project, location='US'
             )  # type : bigquery.Client
             self.load_datasets(client, project)
-            advertisers = self.s.unwrap('advertiser_id')
-            if not isinstance(advertisers, list):
-                advertisers = [advertisers]
-            for advertiser in advertisers:
-                cprint('Advertiser ID: {}'.format(advertiser),
-                       'blue', attrs=['bold', 'underline'])
-                self.load_transfers(client, project, advertiser)
-                self.load_historical_tables(client, project, advertiser)
-                CreateViews(self.settings, client, project, advertiser).run()
-
+            advertiser = str(self.s.unwrap('advertiser_id'))
+            cprint('Advertiser ID: {}'.format(advertiser),
+                   'blue', attrs=['bold', 'underline'])
+            self.load_service(project)
+            self.load_transfers(client, project, advertiser)
+            self.load_historical_tables(client, project, advertiser)
+            CreateViews(self.settings, client, project, advertiser).run()
         except BadRequest as err:
             cprint(
                 'Error. Please ensure you have enabled all requested '
@@ -111,6 +113,33 @@ class Bootstrap:
             )
             cprint(str(err), 'red')
             logging.debug('%s\n%s', err.errors, traceback.format_exc())
+
+    def load_service(self, project):
+        def create_service_account(project_id, name, display_name):
+            service = discovery.build('iam', 'v1')
+
+            my_service_account = service.projects().serviceAccounts().create(
+                name='projects/' + project_id,
+                body={
+                    'accountId': name,
+                    'serviceAccount': {
+                        'displayName': display_name
+                    }
+                }).execute()
+            key = service.projects().serviceAccounts().keys().create(
+                name='projects/-/serviceAccounts/' + my_service_account['email'], body={}
+            ).execute()
+            cprint('Created service account: ' + my_service_account['email'])
+            return my_service_account
+
+        try:
+            create_service_account(
+                project, 
+                'bq-bootstrapper', 
+                'BigQuery Bootstrapper Service Account'
+            )
+        except HttpError:
+            return
 
     def load_datasets(self, client, project):
         for k, v in (('raw', 'raw_dataset'), ('views', 'view_dataset')):
@@ -139,8 +168,8 @@ class Bootstrap:
                 'cyan'
             )
             return config
-        params['agency_id'] = self.s.unwrap('agency_id')
-        params['advertiser_id'] = advertiser
+        params['agency_id'] = str(self.s.unwrap('agency_id'))
+        params['advertiser_id'] = str(advertiser)
         params['include_removed_entities'] = False
         config = {
             'display_name': display_name,
@@ -160,7 +189,7 @@ class Bootstrap:
         )
         return result
 
-    def ensure_utf8(self) -> Blob:
+    def ensure_utf8(self, delete=False) -> Blob:
         file_path = self.settings['file_path']
         dest_filename = file_path.value
         setting: SettingOption[app_settings.AppSettings] = file_path
@@ -168,12 +197,14 @@ class Bootstrap:
         storage_cli = self.storage_cli
         file_location = s['file_location'].value
         bucket = self.bucket
-        now_str = datetime.now().strftime('%Y%m%d%H%m%S%f')
-        dict_map = {v: k for v,k in s.custom['historical_map'].items()}
+        dict_map = {v: k for v, k in s.custom['historical_map'].items()}
         if file_location == 'GCS Bucket':
             file = bucket.blob(dest_filename)
-            path = dirname = '/tmp/in-{}/'.format(now_str)
-            os.mkdir(path)
+            path = dirname = self.path
+            if os.path.exists(path) and delete:
+                shutil.rmtree(path)
+            if not os.path.exists(path):
+                os.mkdir(path)
             if not file.exists():
                 files = list(bucket.list_blobs(prefix=dest_filename))
             else:
@@ -186,17 +217,18 @@ class Bootstrap:
                     file.download_to_file(fh, storage_cli)
         else:
             path = dest_filename
-        dest_filename = 'sa360-bq-{}.csv'.format(s['advertiser_id'])
-        result_dir = Decoder(
+        dest_filename = 'sa360-bq-{}.csv'.format(s['advertiser_id'].value)
+        with Decoder(
             desired_encoding='utf-8',
             dest=dest_filename,
             path=path,
             out_type=Decoder.SINGLE_FILE,
             dict_map=dict_map,
-        ).run()
-        dest_blob = bucket.blob(dest_filename)
-        dest_blob.upload_from_filename(result_dir)
-        return dest_blob
+        ) as decoder:
+            result_dir = decoder.run()
+            dest_blob = bucket.blob(dest_filename)
+            dest_blob.upload_from_filename(result_dir)
+            return dest_blob
 
     def load_historical_tables(self, client, project, advertiser):
         s = self.settings
@@ -209,25 +241,51 @@ class Bootstrap:
             table_name,
         )
         job_config = bigquery.LoadJobConfig()
+        job_config.field_delimiter = ','
+        job_config.quote = '""'
+        delete_table = False
         job_config.autodetect = True
+        overwrite_storage_csv: bool = self.s.unwrap('overwrite_storage_csv')
         job_config.source_format = bigquery.ExternalSourceFormat.CSV
         try:
             # if the table exists - then skip this part.
-            client.get_table(full_table_name)
-            cprint('Table {} exists. Skipping'.format(full_table_name), 'red')
-            return
+            if not self.s.unwrap('overwrite_storage_csv'):
+                client.get_table(full_table_name)
+                if self.s.unwrap('interactive'):
+                    while True:
+                        res = prompt('Table {} exists. '.format(full_table_name)
+                                     + 'Replace with new data? [y/N] ')
+                        if res.lower() == 'y' or res == '1':
+                            delete_table = True
+                            overwrite_storage_csv = True
+                            break
+                        else:
+                            return
+                else:
+                    cprint(
+                        'Table {} exists. Skipping'.format(
+                            full_table_name
+                        ), 'red'
+                    )
+                    return
+            else:
+                delete_table = True
         except NotFound as err:
             pass
 
         try:
-            table = dataset_ref.table(table_name)
-            blob = self.bucket.blob('sa360-bq-{}.csv'.format(advertiser))
-            if not blob.exists() or self.s.unwrap('overwrite_storage_csv'):
-                blob = self.ensure_utf8()
+            if not delete_table:
+                table = dataset_ref.table(table_name)
+                blob = self.bucket.blob('sa360-bq-{}.csv'.format(advertiser))
+            if delete_table or not blob.exists():
+                blob = self.ensure_utf8(delete=delete_table)
             uri = 'gs://{}/{}'.format(
                 self.s.unwrap('storage_bucket'),
                 blob.name
             )
+            if delete_table:
+                client.delete_table(full_table_name)
+                table = dataset_ref.table(table_name)
             load_job = client.load_table_from_uri(
                 uri, table, job_config=job_config
             )
@@ -304,7 +362,7 @@ class CreateViews:
                 )
 
     def view(self, view_name: ViewTypes, func_name):
-        adv = self.s.unwrap('advertiser_id')
+        adv = str(self.s.unwrap('advertiser_id'))
         logging.debug(view_name.value)
         adv_view = get_view_name(view_name, adv)
         view_ref = DataSets.views.table(adv_view)
