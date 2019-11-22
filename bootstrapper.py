@@ -20,6 +20,7 @@ import csv
 import os
 import traceback
 from datetime import datetime
+import shutil
 from typing import Union
 
 from absl import logging
@@ -65,6 +66,7 @@ class Bootstrap:
             app_settings.AppSettings
         )
         self.s = None
+        self.path = '/tmp/in-upload/'
 
     def run(self):
         app.run(self.exec)
@@ -187,7 +189,7 @@ class Bootstrap:
         )
         return result
 
-    def ensure_utf8(self) -> Blob:
+    def ensure_utf8(self, delete=False) -> Blob:
         file_path = self.settings['file_path']
         dest_filename = file_path.value
         setting: SettingOption[app_settings.AppSettings] = file_path
@@ -195,12 +197,14 @@ class Bootstrap:
         storage_cli = self.storage_cli
         file_location = s['file_location'].value
         bucket = self.bucket
-        now_str = datetime.now().strftime('%Y%m%d%H%m%S%f')
-        dict_map = {v: k for v,k in s.custom['historical_map'].items()}
+        dict_map = {v: k for v, k in s.custom['historical_map'].items()}
         if file_location == 'GCS Bucket':
             file = bucket.blob(dest_filename)
-            path = dirname = '/tmp/in-{}/'.format(now_str)
-            os.mkdir(path)
+            path = dirname = self.path
+            if os.path.exists(path) and delete:
+                shutil.rmtree(path)
+            if not os.path.exists(path):
+                os.mkdir(path)
             if not file.exists():
                 files = list(bucket.list_blobs(prefix=dest_filename))
             else:
@@ -214,16 +218,17 @@ class Bootstrap:
         else:
             path = dest_filename
         dest_filename = 'sa360-bq-{}.csv'.format(s['advertiser_id'].value)
-        result_dir = Decoder(
+        with Decoder(
             desired_encoding='utf-8',
             dest=dest_filename,
             path=path,
             out_type=Decoder.SINGLE_FILE,
             dict_map=dict_map,
-        ).run()
-        dest_blob = bucket.blob(dest_filename)
-        dest_blob.upload_from_filename(result_dir)
-        return dest_blob
+        ) as decoder:
+            result_dir = decoder.run()
+            dest_blob = bucket.blob(dest_filename)
+            dest_blob.upload_from_filename(result_dir)
+            return dest_blob
 
     def load_historical_tables(self, client, project, advertiser):
         s = self.settings
@@ -238,7 +243,9 @@ class Bootstrap:
         job_config = bigquery.LoadJobConfig()
         job_config.field_delimiter = ','
         job_config.quote = '""'
+        delete_table = False
         job_config.autodetect = True
+        overwrite_storage_csv: bool = self.s.unwrap('overwrite_storage_csv')
         job_config.source_format = bigquery.ExternalSourceFormat.CSV
         try:
             # if the table exists - then skip this part.
@@ -249,7 +256,8 @@ class Bootstrap:
                         res = prompt('Table {} exists. '.format(full_table_name)
                                      + 'Replace with new data? [y/N] ')
                         if res.lower() == 'y' or res == '1':
-                            client.delete_table(full_table_name)
+                            delete_table = True
+                            overwrite_storage_csv = True
                             break
                         else:
                             return
@@ -259,21 +267,25 @@ class Bootstrap:
                             full_table_name
                         ), 'red'
                     )
-                return
+                    return
             else:
-                client.delete_table(full_table_name)
+                delete_table = True
         except NotFound as err:
             pass
 
         try:
-            table = dataset_ref.table(table_name)
-            blob = self.bucket.blob('sa360-bq-{}.csv'.format(advertiser))
-            if not blob.exists() or self.s.unwrap('overwrite_storage_csv'):
-                blob = self.ensure_utf8()
+            if not delete_table:
+                table = dataset_ref.table(table_name)
+                blob = self.bucket.blob('sa360-bq-{}.csv'.format(advertiser))
+            if delete_table or not blob.exists():
+                blob = self.ensure_utf8(delete=delete_table)
             uri = 'gs://{}/{}'.format(
                 self.s.unwrap('storage_bucket'),
                 blob.name
             )
+            if delete_table:
+                client.delete_table(full_table_name)
+                table = dataset_ref.table(table_name)
             load_job = client.load_table_from_uri(
                 uri, table, job_config=job_config
             )

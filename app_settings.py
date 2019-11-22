@@ -126,6 +126,7 @@ class AppSettings(settings.AbstractSettings):
                     'Is your data in GCS or did you upload here?',
                     method=flags.DEFINE_enum,
                     options=FileLocationOptions,
+                    default=FileLocationOptions.GCS_BUCKET.value,
                     required=True,
                 ),
                 'file_path': settings.SettingOption.create(
@@ -151,7 +152,7 @@ class AppSettings(settings.AbstractSettings):
                 'has_device_segment': settings.SettingOption.create(
                     self,
                     'Does the report have a device segment column?',
-                    default=True,
+                    default=False,
                     method=flags.DEFINE_bool,
                 ),
                 'report_level': settings.SettingOption.create(

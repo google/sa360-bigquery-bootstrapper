@@ -108,15 +108,24 @@ Accepted file formats are:
 
 Note that the decoder will check *all* sub-directories in your specified path and will fail
 as soon as a header is different. Running multiple times may lead to duplicate rows.
-At the moment, data atomicity before uploading files is not guaranteed using this script.
+d
 
-## More Queries to Try
+## Next Steps
 
-In your [BigQuery Console](https://pantheon.corp.google.com/bigquery?project={{project-id}}) you
+### Add Backfill dates
+1. Navigagte to your [BigQuery Console](https://console.cloud.google.com/bigquery?project={{project-id}})
+2. Go to "Transfers" in the left menu.
+3. Select the transfer for the advertiser you care about
+4. Select "More" in the top right.
+5. Set your backfill dates and click submit.
+
+### Run Queries
+
+In your [BigQuery Console](https://console.cloud.google.com/bigquery?project={{project-id}}) you
 can enter in any SQL query you want, and get your data in any format you want. Here are a few
 examples:
 
-### Historical Conversion Report
+#### Historical Conversion Report
 This view displays one line per conversion (so if a keyword report has 5 conversions in one line,
 this report will have 5 lines with one conversion each).
 
