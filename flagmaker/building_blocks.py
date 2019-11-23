@@ -21,8 +21,11 @@ from abc import abstractmethod
 from collections.abc import Iterable
 from enum import Enum
 from typing import Generic
+from typing import Optional
 
 from typing import TypeVar
+
+from typing import List
 
 
 class SettingOptionInterface(ABC, object):
@@ -119,7 +122,7 @@ class SettingsInterface(ABC, Generic[T]):
         pass
 
 
-def list_to_string_list(l: Enum):
+def list_to_string_list(l: Optional[List]):
     i = [0]
 
     def count():

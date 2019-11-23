@@ -62,7 +62,7 @@ class ViewTypes(Enum):
     KEYWORD_MAPPER = 'KeywordMapper'
     HISTORICAL_CONVERSIONS = 'HistoricalConversions'
     REPORT_VIEW = 'ReportView'
-
+    HISTORICAL_REPORT = 'HistoricalConversionReport'
 
 class ViewGetter(object):
     def __init__(self, advertiser):
@@ -70,6 +70,17 @@ class ViewGetter(object):
 
     def get(self, type: ViewTypes):
         return '{}_{}'.format(type.value, self.advertiser)
+
+
+class Locale(Enum):
+    US = 1
+    OTHER = 2
+
+    @staticmethod
+    def get(location: str):
+        if location.lower().startswith('us'):
+            return Locale.US
+        return Locale.OTHER
 
 
 def get_view_name(view_type: ViewTypes, advertiser: str):

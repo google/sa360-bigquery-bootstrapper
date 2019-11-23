@@ -16,36 +16,22 @@
 # Note that these code samples being shared are not official Google
 # products and are not formally supported.
 # ************************************************************************/
-import re
-from enum import Enum
-from typing import Union
-
-from absl import flags
 from datetime import datetime
-
-from absl import logging
-from dateutil.parser import parse as parse_date
-from google.api_core import exceptions
-from google.api_core.exceptions import NotFound
-from google.cloud import storage
-from google.cloud.storage import Blob
-from google.cloud.storage import Bucket
-from prompt_toolkit.completion import PathCompleter
-from termcolor import cprint
-from prompt_toolkit import prompt
-import pandas as pd
-import os
-
-from typing import Type
-
+from enum import Enum
 from typing import Dict
-
-from csv_decoder import Decoder
-from flagmaker import settings
 from typing import List
 
-from flagmaker.exceptions import FlagMakerPromptInterruption
+import numpy as np
+from absl import flags
+from dateutil.parser import parse as parse_date
+from google.api_core import exceptions
+from google.cloud import storage
+from prompt_toolkit import prompt
+from termcolor import cprint
+
+from flagmaker import settings
 from flagmaker.exceptions import FlagMakerConfigurationError
+from utilities import Locale
 
 
 class FileLocationOptions(Enum):
@@ -100,7 +86,8 @@ class AppSettings(settings.AbstractSettings):
                 'location': settings.SettingOption.create(
                     self,
                     'Cloud Location (2 letter country code)',
-                    default='US'
+                    default='US',
+                    after=self.hooks.set_locale,
                 ),
                 'agency_id': settings.SettingOption.create(self, 'SA360 Agency ID'),
                 'advertiser_id': settings.SettingOption.create(
@@ -179,6 +166,7 @@ class AppSettings(settings.AbstractSettings):
                 'Column name for the Account Name',
                 default='account_name',
                 after=self.hooks.map_historical_column,
+                attrs={'dtype': np.object},
             ),
             'campaign_column_name': settings.SettingOption.create(
                 self,
@@ -186,12 +174,14 @@ class AppSettings(settings.AbstractSettings):
                 '(only if including historical data)',
                 default='campaign_name',
                 after=self.hooks.map_historical_column,
+                attrs={'dtype': np.object},
             ),
             'conversion_count_column': settings.SettingOption.create(
                 self,
                 'Specify the conversion column',
                 default='conversions',
                 after=self.hooks.map_historical_column,
+                attrs={'dtype': np.float64},
             ),
             'revenue_column_name': settings.SettingOption.create(
                 self,
@@ -202,6 +192,7 @@ class AppSettings(settings.AbstractSettings):
                 required=False,
                 conditional=lambda s: s['has_revenue_column'].value,
                 after=self.hooks.map_historical_column,
+                attrs={'dtype': np.float64},
             ),
             'device_segment_column_name': settings.SettingOption.create(
                 self,
@@ -209,12 +200,14 @@ class AppSettings(settings.AbstractSettings):
                 default='device_segment',
                 conditional=lambda s: s['has_device_segment'].value,
                 after=self.hooks.map_historical_column,
+                attrs={'dtype': np.object},
             ),
             'date_column_name': settings.SettingOption.create(
                 self,
                 'Column name for the Date Value',
                 default='date',
                 after=self.hooks.map_historical_column,
+                attrs={'dtype': np.datetime64},
             ),
             'adgroup_column_name': settings.SettingOption.create(
                 self,
@@ -222,6 +215,7 @@ class AppSettings(settings.AbstractSettings):
                 default='ad_group',
                 conditional=lambda s: s['report_level'].value != 'campaign',
                 after=self.hooks.map_historical_column,
+                attrs={'dtype': np.object},
             ),
             'keyword_match_type': settings.SettingOption.create(
                 self,
@@ -230,6 +224,7 @@ class AppSettings(settings.AbstractSettings):
                 default='match_type',
                 after=self.hooks.map_historical_column,
                 conditional=lambda s: s['report_level'].value != 'campaign',
+                attrs={'dtype': np.object},
             ),
             'keyword_column_name': settings.SettingOption.create(
                 self,
@@ -237,6 +232,7 @@ class AppSettings(settings.AbstractSettings):
                 default='keyword',
                 conditional=lambda s: s['report_level'].value != 'campaign',
                 after=self.hooks.map_historical_column,
+                attrs={'dtype': np.object},
             )
         }
 
@@ -321,6 +317,10 @@ class Hooks:
             ), 
             attrs=['bold', 'underline'])
 
+    def set_locale(self, setting: settings.SettingOption):
+        s = setting.settings
+        s.custom['locale'] = Locale.get(setting.value)
+
     def bucket_options(self, setting: settings.SettingOption):
         s = setting.settings
         buckets = s.custom['buckets'] = list(self.storage.list_buckets())
@@ -337,7 +337,7 @@ class Hooks:
         settings = setting.settings
         if 'historical_map' not in settings.custom:
             settings.custom['historical_map'] = {}
-        settings.custom['historical_map'][setting.value] = setting.default
+        settings.custom['historical_map'][setting.value] = setting
 
     def convert_to_date(self, setting: settings.SettingOption):
         try:

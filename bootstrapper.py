@@ -16,15 +16,14 @@
 # Note that these code samples being shared are not official Google
 # products and are not formally supported.
 # ************************************************************************/
-import csv
 import os
 import traceback
 from datetime import datetime
+
+import numpy as np
 import shutil
-from typing import Union
 
 from absl import logging
-from dateutil.parser import parse as parse_date
 from absl import app
 from google.api_core.exceptions import BadRequest
 from google.api_core.exceptions import Conflict
@@ -32,7 +31,6 @@ from google.api_core.exceptions import NotFound
 from google.cloud import bigquery
 from google.cloud import bigquery_datatransfer
 from google.cloud import storage
-from google.cloud.bigquery import Table
 from google.cloud.bigquery.dataset import Dataset
 from google.cloud.storage import Blob
 from google.cloud.storage import Bucket
@@ -40,19 +38,16 @@ from google.protobuf.struct_pb2 import Struct
 from googleapiclient import discovery
 from googleapiclient.errors import HttpError
 from termcolor import cprint
+from typing import Dict
 
 import app_settings
 from csv_decoder import Decoder
 from flagmaker.settings import SettingOption
 from prompt_toolkit import prompt
 from utilities import *
-from flagmaker.settings import AbstractSettings
 from flagmaker.settings import Config
-
-
-class DataSets:
-    raw: bigquery.dataset.Dataset = None
-    views: bigquery.dataset.Dataset = None
+from views import CreateViews
+from views import DataSets
 
 
 class Bootstrap:
@@ -220,6 +215,7 @@ class Bootstrap:
         dest_filename = 'sa360-bq-{}.csv'.format(s['advertiser_id'].value)
         with Decoder(
             desired_encoding='utf-8',
+            locale=s.custom['locale'],
             dest=dest_filename,
             path=path,
             out_type=Decoder.SINGLE_FILE,
@@ -229,6 +225,22 @@ class Bootstrap:
             dest_blob = bucket.blob(dest_filename)
             dest_blob.upload_from_filename(result_dir)
             return dest_blob
+
+    def schema(self):
+        schemas = []
+        type_map = {
+            np.object: 'STRING',
+            np.datetime64: 'DATE',
+            np.int64: 'INT64',
+            np.float64: 'FLOAT64',
+        }
+        historical_map: Dict[str, SettingOption] = self.settings.custom['historical_map']
+        for setting in historical_map.values():
+            schemas.append(bigquery.SchemaField(
+                setting.default,
+                type_map.get(setting.attrs['dtype'])
+            ))
+        return schemas
 
     def load_historical_tables(self, client, project, advertiser):
         s = self.settings
@@ -243,8 +255,9 @@ class Bootstrap:
         job_config = bigquery.LoadJobConfig()
         job_config.field_delimiter = ','
         job_config.quote = '""'
+        job_config.skip_leading_rows = 1
         delete_table = False
-        job_config.autodetect = True
+        job_config.schema = self.schema()
         overwrite_storage_csv: bool = self.s.unwrap('overwrite_storage_csv')
         job_config.source_format = bigquery.ExternalSourceFormat.CSV
         try:
@@ -284,7 +297,7 @@ class Bootstrap:
                 blob.name
             )
             if delete_table:
-                client.delete_table(full_table_name)
+                client.delete_table(full_table_name, not_found_ok=True)
                 table = dataset_ref.table(table_name)
             load_job = client.load_table_from_uri(
                 uri, table, job_config=job_config
@@ -302,10 +315,14 @@ class Bootstrap:
             )
             pass
         except BadRequest as err:
-            cprint(str(err), 'red', attrs=['bold'])
             if len(err.errors) > 0:
+                i = 1
                 for e in err.errors:
-                    cprint('- {}'.format(e['debugInfo']), 'red')
+                    cprint(e.keys(), attrs=['bold'])
+                    cprint('Error #{}: {}'.format(i, e['debugInfo']), 'red')
+                    i += 1
+            else:
+                cprint(str(err), 'red', attrs=['bold'])
             logging.info(traceback.format_exc())
             exit(1)
 
@@ -324,267 +341,4 @@ class SystemSettings(object):
     SERVICE_NAME = 'doubleclick_search'
 
 
-class MethodNotCreated(Exception):
-    pass
-
-
-class CreateViews:
-    client: bigquery.Client = None
-    project: str = None
-    advertiser: str = None
-    settings: AbstractSettings = None
-
-    def __init__(self, config, client, project, advertiser):
-        self.settings: app_settings.AppSettings = config
-        self.client = client
-        self.project = project
-        self.advertiser = advertiser
-        self.s = SettingUtil(config)
-
-    def run(self):
-        report_level = self.s.unwrap('report_level')
-        if report_level == 'campaign':
-            raise MethodNotCreated('Methods for campaign-only views'
-                                   ' not implemented.')
-        else:
-            if self.s.unwrap('has_historical_data'):
-                self.view(
-                    ViewTypes.KEYWORD_MAPPER,
-                    'keyword_mapper'
-                )
-                self.view(
-                    ViewTypes.HISTORICAL_CONVERSIONS,
-                    'historical_conversions'
-                )
-                self.view(
-                    ViewTypes.REPORT_VIEW,
-                    'report_view',
-                )
-
-    def view(self, view_name: ViewTypes, func_name):
-        adv = str(self.s.unwrap('advertiser_id'))
-        logging.debug(view_name.value)
-        adv_view = get_view_name(view_name, adv)
-        view_ref = DataSets.views.table(adv_view)
-        view_query = getattr(
-            self,
-            func_name if func_name is not None else view_name.value
-        )(adv)
-        logging.debug(view_query)
-        try:
-            logging.debug(view_ref)
-            view: Table = self.client.get_table(view_ref)
-            view.view_query = view_query
-            cprint('= updated {}'.format(adv_view), 'green')
-        except NotFound as err:
-            try:
-                logging.debug('error:\n-----\n%s\n-----\n', err)
-                view = bigquery.Table(view_ref)
-                logging.info('%s.%s', view.dataset_id, view.table_id)
-                view.view_query = view_query
-                self.client.create_table(view, exists_ok=True)
-                cprint('+ created {}'.format(adv_view), 'green')
-            except NotFound as err:
-                cprint('Error: {}'.format(str(err)), 'red')
-                logging.info(traceback.format_exc())
-        self.keyword_mapper(adv)
-
-    def historical_conversions(self, advertiser):
-        views = ViewGetter(advertiser)
-
-        sql = """SELECT 
-            h.date,
-            a.keywordId{deviceSegment},
-            a.keywordMatchType MatchType,
-            h.ad_group AdGroup,
-            {conversions} conversions,
-            {revenue} revenue
-          FROM `{project}`.`{raw}`.`{historical_table_name}` h
-          INNER JOIN (
-            SELECT keywordId,
-                keyword,
-                campaign,
-                keywordMatchType,
-                adGroup,
-                account
-            FROM `{project}`.`{views}`.`{keyword_mapper}`
-            GROUP BY
-                keywordId,
-                keyword,
-                campaign,
-                account,
-                adGroup,
-                keywordMatchType
-          ) a
-            ON a.keyword=h.keyword
-            AND a.campaign=h.campaign_name
-            AND a.account=h.account_name
-            AND a.adGroup=h.ad_group
-            AND LOWER(a.keywordMatchType) = LOWER(h.match_type)
-          GROUP BY
-            h.date,
-            a.keywordId, 
-            a.keyword, 
-            a.keywordMatchType,
-            h.ad_group,
-            a.campaign{device_segment_column_name},
-            a.account""".format(
-              project=self.s.unwrap('gcp_project_name'),
-              deviceSegment=(
-                  ',\n' + 'h.device_segment'
-                  + ' AS device_segment'
-              ) if self.s.unwrap('has_device_segment') else '',
-              device_segment_column_name = (
-                  ',\n'
-                  + 'h.' + self.s.unwrap('device_segment_column_name')
-              ) if self.s.unwrap('has_device_segment') else '',
-              raw=self.s.unwrap('raw_dataset'),
-              views=self.s.unwrap('view_dataset'),
-              historical_table_name=views.get(ViewTypes.HISTORICAL),
-              keyword_mapper=views.get(ViewTypes.KEYWORD_MAPPER),
-              conversions=aggregate_if(
-                  Aggregation.SUM,
-                  'conversions',
-                  'SUM(1)',
-                  prefix='h',
-              ),
-              revenue=aggregate_if(
-                  Aggregation.SUM,
-                  'revenue',
-                  0,
-                  prefix='h',
-              ),
-          )
-        return sql
-
-    def keyword_mapper(self, advertiser):
-        sql = '''SELECT 
-            k.keywordId, 
-            k.keywordText keyword,
-            k.keywordMatchType,
-            c.campaign, 
-            a.account,
-            g.adGroup,
-            a.accountType
-            FROM (
-                SELECT keywordText,
-                keywordId,
-                keywordEngineId,
-                campaignId,
-                accountId,
-                adgroupId,
-                keywordMatchType,
-                RANK() OVER (
-                  PARTITION BY keywordText, keywordMatchType, campaignId, 
-                      accountId, adGroupId
-                    ORDER BY CASE WHEN status='Active' THEN 0 ELSE 1 END,
-                    CASE WHEN keywordEngineId IS NOT NULL THEN 0 ELSE 1 END
-                  ) rank
-              FROM `{project}`.`{raw_data}`.`Keyword_{advertiser_id}` c
-            ) k
-            INNER JOIN (
-              SELECT campaignId, campaign 
-              FROM `{project}`.`{raw_data}`.`Campaign_{advertiser_id}` 
-              GROUP BY campaignId, campaign
-              ) c ON c.campaignId = k.campaignId
-            INNER JOIN (
-              SELECT accountId, account, accountType 
-              FROM `{project}`.`{raw_data}`.`Account_{advertiser_id}` 
-              GROUP BY accountId, account, accountType
-              ) a ON a.accountId = k.accountId
-            INNER JOIN (
-              SELECT adGroupId, adGroup
-              FROM `{project}`.`{raw_data}`.`AdGroup_{advertiser_id}`
-              GROUP BY adGroupId, adGroup
-            ) g ON g.adGroupId = k.adGroupId
-            WHERE keywordText IS NOT NULL
-            AND rank = 1
-            GROUP BY
-                k.keywordId, 
-                k.keywordText,
-                k.keywordMatchType, 
-                c.campaign, 
-                a.account,
-                a.accountType,
-                g.adGroup'''.format(
-                    project=self.s.unwrap('gcp_project_name'),
-                    raw_data=self.s.unwrap('raw_dataset'),
-                    advertiser_id=advertiser,
-                )
-        return sql
-
-    def report_view(self, advertiser):
-        views = ViewGetter(advertiser)
-
-        sql = """SELECT 
-        d.date Date, 
-        m.keywordId,
-        m.keyword Keyword{deviceSegment}, 
-        m.campaign Campaign, 
-        m.account Engine, 
-        m.accountType Account_Type,
-        SUM(clicks) Clicks, 
-        SUM(impr) Impressions, 
-        SUM(weightedPos) Weighted_Pos,
-        COALESCE(SUM(cost), 0) Cost,
-        COALESCE(SUM(c.revenue), 0) + COALESCE(SUM(h.revenue), 0) Revenue,
-        COALESCE(SUM(c.conversions), 0) + COALESCE(SUM(h.conversions), 0) Conversions
-        FROM (
-          SELECT date, 
-            keywordId,
-            SUM(clicks) clicks, 
-            SUM(impr) impr, 
-            SUM(avgPos*impr) weightedPos,
-            SUM(cost) cost{deviceSegment}
-          FROM `{project}.{raw_data}.KeywordDeviceStats_{advertiser}`
-          GROUP BY 
-            date, 
-            keywordId{deviceSegment}
-        ) d
-        INNER JOIN `{project}.{view_data}.{keyword_mapper}` m
-          ON m.keywordId = d.keywordId
-        LEFT JOIN (
-          SELECT
-            date,
-            keywordId{deviceSegment},
-            SUM(revenue) revenue,
-            SUM(conversions) conversions
-          FROM `{project}.{view_data}.{historical_conversions}` o
-          GROUP BY 
-            date, 
-            keywordId{deviceSegment}
-        ) h 
-            ON h.keywordId=d.keywordId 
-            AND h.date=d.date
-        LEFT JOIN (
-          SELECT 
-            date, 
-            keywordId, 
-            SUM(dfaRevenue) revenue,
-            SUM(dfaTransactions) conversions
-          FROM 
-            `{project}.{raw_data}.KeywordFloodlightAndDeviceStats_{advertiser}`
-          GROUP BY date, keywordId
-        ) c 
-            ON c.keywordId=d.keywordId 
-            AND c.date=d.date 
-            AND c.date > '{date}'
-        GROUP BY
-            d.date, 
-            m.keywordId, 
-            m.keyword, 
-            m.campaign,
-            m.account{deviceSegment},
-            m.accountType""".format(
-            view_data=self.s.unwrap('view_dataset'),
-            keyword_mapper=views.get(ViewTypes.KEYWORD_MAPPER),
-            deviceSegment=(',\n' + 'd.deviceSegment AS Device_Segment')
-                          if self.s.unwrap('has_device_segment') else '',
-            project=self.s.unwrap('gcp_project_name'),
-            raw_data=self.s.unwrap('raw_dataset'),
-            advertiser=advertiser,
-            date=self.s.unwrap('first_date_conversions'),
-            historical_conversions=views.get(ViewTypes.HISTORICAL_CONVERSIONS),
-        )
-        return sql
 
