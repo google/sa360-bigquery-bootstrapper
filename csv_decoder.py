@@ -52,6 +52,7 @@ class Decoder(object):
         self.first = True  # ignore headers when False
         self.map = {}
         self.dtypes = {}
+        self.errors_found = []
         self.parse_dates = []
         for k, v in dict_map.items():
             k = k.lower()
@@ -87,6 +88,13 @@ class Decoder(object):
         if not os.path.exists(self.dir):
             os.mkdir(self.dir)
         Decoder.ChooseyDecoder(self, self.path).run()
+
+        if len(self.errors_found) > 0:
+            cprint('The following formatting errors were found:', 'red')
+            for error in self.errors_found:
+                cprint('- {}'.format(error), 'red')
+            cprint('Please correct these errors and re-run.', 'red')
+            exit(1)
         return (
             self.dir
             if self.out_type != Decoder.SINGLE_FILE
@@ -99,7 +107,8 @@ class Decoder(object):
         return self
 
     def __exit__(self, type, value, traceback):
-        os.remove(self.dir + '/' + self.dest)
+        if os.path.exists(self.dir + '/' + self.dest):
+            os.remove(self.dir + '/' + self.dest)
         pass
 
     @property
@@ -152,21 +161,29 @@ class Decoder(object):
             def rename_columns(s: str):
                 ls = s.lower()
                 return self.parent.map[ls] if ls in self.parent.map else ls
-            kwargs['nrows'] = 1
+            nrows = kwargs.get('nrows', 0)
+            kwargs['nrows'] = 0
             hdf= method(path, **kwargs)
             hdf.rename(
                 rename_columns, inplace=True, copy=False, axis='columns'
             )
             headers = list(hdf.columns)
-
             del kwargs['nrows']
-            if 'skiprows' in kwargs: kwargs['skiprows'] += 1
-            else: kwargs['skiprows'] = 1
-            df = method(path, dtype=dtype, names=headers, **kwargs)
-            arguments = {}
-            arguments['dayfirst'] = self.parent.locale != Locale.US
-            df['date'] = pd.to_datetime(df['date'], **arguments)
-            return df
+            kwargs['skiprows'] = kwargs.get('skiprows', 0) + 1
+            if len(headers) != len(set(headers)):
+                self.parent.errors_found.append(
+                    'Duplicate columns in {}'.format(self.path)
+                )
+            if nrows > 0:
+                kwargs['nrows'] = nrows
+            if len(self.parent.errors_found) == 0:
+                df = method(path, dtype=dtype, names=headers, **kwargs)
+                arguments = {
+                    'dayfirst': self.parent.locale != Locale.US,
+                }
+                df['date'] = pd.to_datetime(df['date'], **arguments)
+                return df
+            return pd.DataFrame()
 
         def decode_excel(self):
             df: pd.DataFrame = self.read(
@@ -189,9 +206,10 @@ class Decoder(object):
                         dtype=self.parent.dtypes,
                         thousands=self.parent.thousands,
                     )
-                    self.write(df)
-                    logging.info('Decoded %s from %s',
-                                 self.path.replace('//', '/'), encoding)
+                    if len(self.parent.errors_found) == 0:
+                        self.write(df)
+                        logging.info('Decoded %s from %s',
+                                     self.path.replace('//', '/'), encoding)
                     break
                 except (UnicodeDecodeError, UnicodeError):
                     if encoding == 'latin-1':
