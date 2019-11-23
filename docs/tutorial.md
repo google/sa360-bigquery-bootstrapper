@@ -125,22 +125,13 @@ In your [BigQuery Console](https://console.cloud.google.com/bigquery?project={{p
 can enter in any SQL query you want, and get your data in any format you want. Here are a few
 examples:
 
-#### Historical Conversion Report
-This view displays one line per conversion (so if a keyword report has 5 conversions in one line,
-this report will have 5 lines with one conversion each).
+#### Conversion Reports Explained
+- The Data Studio conversion report is **views.ReportView_[Advertiser ID]**
 
-    WITH conversions AS (
-        SELECT 
-            SPLIT(REPEAT(CONCAT(keywordId, ","), CAST(FLOOR(conversions) AS INT64)), ",") keywords
-        FROM `conversion-extractor.elui_views.historical_conversions`
-    )
-    SELECT 
-        c1.date,c1.keywordId,c1.MatchType,
-        c1.AdGroup,1 conversions,revenue 
-    FROM `[PROJECT].[DATASET].HistoricalConversions_[Advertiser ID]` c1 
-    INNER JOIN (
-        SELECT keywordId 
-        FROM conversions
-        CROSS JOIN UNNEST(conversions.keywords) keywordId 
-        WHERE keywordId IS NOT NULL
-    ) keywords ON keywords.keywordId=c1.keywordId AND FLOOR(c1.conversions) >= 1;
+- The conversion report that can be adapted (adding floodlight data, etc.) to upload back to
+SA360 is **views.HistoricalConversionReport_[Advertiser ID]**
+
+### Future Plans
+
+- Finish campaign-level reporting functionality
+- Add Floodlight reporting support

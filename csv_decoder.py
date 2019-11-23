@@ -22,6 +22,9 @@ Decodes CSV files. If given a folder, recursively opens.
 
 Handles ZIP files.
 """
+from typing import Union
+
+import numpy as np
 import os
 import shutil
 import tarfile
@@ -31,20 +34,37 @@ from termcolor import cprint
 from datetime import datetime
 import pandas as pd
 from absl import logging
+from typing import Dict
 from xlrd import XLRDError
+
+from flagmaker.settings import SettingOption
+from utilities import Locale
 
 
 class Decoder(object):
     SINGLE_FILE = 1
     SEPARATE_FILES = 2
 
-    def __init__(self, desired_encoding, path, dict_map,
+    def __init__(self, desired_encoding, path, locale: Locale,
+                 dict_map: Dict[str, SettingOption], thousands=',',
                  out_type=SINGLE_FILE, dest='out.csv', callback=None):
+        self.locale = locale
         self.first = True  # ignore headers when False
-        self.map: dict = {k.lower():v for k, v in dict_map.items()}
-        self.dtypes = {k: str for k in self.map.keys()}
+        self.map = {}
+        self.dtypes = {}
+        self.parse_dates = []
+        for k, v in dict_map.items():
+            k = k.lower()
+            self.map[k] = v.default
+            if v.attrs['dtype'] == np.datetime64:
+                self.parse_dates.append(v.default)
+                self.dtypes[v.default] = np.object
+            else:
+                self.dtypes[v.default] = v.attrs['dtype']
+
         self.out_type = out_type
         self.desired_encoding = desired_encoding
+        self.thousands = thousands
         self.path = path
         self.dest = dest
         self._file_count = 0
@@ -61,6 +81,9 @@ class Decoder(object):
 
     def run(self):
         self.dir = '/tmp/sa-bq-updir'
+        file = self.dir + '/' + self.dest
+        if os.path.exists(file):
+            os.remove(file)
         if not os.path.exists(self.dir):
             os.mkdir(self.dir)
         Decoder.ChooseyDecoder(self, self.path).run()
@@ -77,13 +100,7 @@ class Decoder(object):
 
     def __exit__(self, type, value, traceback):
         os.remove(self.dir + '/' + self.dest)
-
-    def guess_schema(self, df: pd.DataFrame):
-        for c in df:
-            column = df[c]
-            val = column[0]
-            if self.callback is not None:
-                self.callback(val)
+        pass
 
     @property
     def time(self) -> str:
@@ -100,7 +117,7 @@ class Decoder(object):
                 cprint('Decoding directory')
                 return Decoder.DirectoryDecoder(self.parent, self.path).run()
             elif self.path.endswith('.csv') or self.path.endswith('.xlsx'):
-                cprint('Decoding file')
+                cprint('Decoding file...', 'grey')
                 return Decoder.FileDecoder(self.parent, self.path).run()
             elif tarfile.is_tarfile(self.path):
                 cprint('Unpacking tar file')
@@ -127,23 +144,50 @@ class Decoder(object):
                 self.decode_csv()
                 return
 
+        def read(
+            self,
+            method: Union[pd.read_csv, pd.read_excel],
+            path, dtype, **kwargs
+        ) -> pd.DataFrame:
+            def rename_columns(s: str):
+                ls = s.lower()
+                return self.parent.map[ls] if ls in self.parent.map else ls
+            kwargs['nrows'] = 1
+            hdf= method(path, **kwargs)
+            hdf.rename(
+                rename_columns, inplace=True, copy=False, axis='columns'
+            )
+            headers = list(hdf.columns)
+
+            del kwargs['nrows']
+            if 'skiprows' in kwargs: kwargs['skiprows'] += 1
+            else: kwargs['skiprows'] = 1
+            df = method(path, dtype=dtype, names=headers, **kwargs)
+            arguments = {}
+            arguments['dayfirst'] = self.parent.locale != Locale.US
+            df['date'] = pd.to_datetime(df['date'], **arguments)
+            return df
+
         def decode_excel(self):
-            df: pd.DataFrame = pd.read_excel(
+            df: pd.DataFrame = self.read(
+                pd.read_excel,
                 self.path,
                 dtype=self.parent.dtypes,
+                parse_dates=self.parent.parse_dates,
+                thousands=self.parent.thousands,
             )
-            df.rename(columns=self.parent.map)
-            self.write(df)
-            logging.info('Wrote to ' + self.path)
-            return
+            logging.info('Converted XLSX file {} to CSV'.format(self.path))
+            return df
 
         def decode_csv(self):
             for encoding in ['utf-8', 'utf-16', 'latin-1']:
                 try:
-                    df = pd.read_csv(
+                    df = self.read(
+                        pd.read_csv,
                         self.path,
                         encoding=encoding,
                         dtype=self.parent.dtypes,
+                        thousands=self.parent.thousands,
                     )
                     self.write(df)
                     logging.info('Decoded %s from %s',
@@ -159,10 +203,6 @@ class Decoder(object):
                     )
 
         def write(self, df: pd.DataFrame):
-            def rename_columns(s: str):
-                l = s.lower()
-                return self.parent.map[l] if l in self.parent.map else l
-
             doing_single_file = self.parent.out_type == Decoder.SINGLE_FILE
             if doing_single_file:
                 write_method = 'a'
@@ -172,7 +212,6 @@ class Decoder(object):
             else:
                 include_headers = True
                 write_method = 'w'
-            df.rename(rename_columns, inplace=True, copy=False, axis='columns')
             self.parent.rows_opened += len(df.index)
             cprint(
                 '+ Stored a file {}'.format(self.parent.filename), 
@@ -183,7 +222,8 @@ class Decoder(object):
                 index=False,
                 header=include_headers,
                 mode=write_method,
-                columns=self.parent.map.values()
+                columns=self.parent.map.values(),
+                date_format='%Y-%m-%d'
             )
 
         def decode_file(self, encoding: str, file: bytes):

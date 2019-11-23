@@ -17,6 +17,8 @@
 # products and are not formally supported.
 # ************************************************************************/
 import os
+from typing import Union
+
 import yaml
 
 from yaml.parser import ParserError
@@ -68,21 +70,23 @@ class SettingOption(SettingOptionInterface, Generic[T]):
     validation: callable = None
     conditional: callable = None
     after: callable = None
-    prompt: callable or str = None
-    custom_data: StringKeyDict = {}
+    prompt: Union[callable, str]
+    custom_data: StringKeyDict
     include_in_interactive: bool = True
-    called: dict = {}
+    called: dict
     _options: EnumMeta = None
     _error: bool = False
+    attrs: dict
 
     def __init__(self):
         self._value = Value()
+        self.called = {}
 
     @classmethod
     def create(cls, settings: T, helptext=None, default=None,
                method=flags.DEFINE_string, required=True, validation=None,
                conditional=None, after=None, prompt=None,
-               include_in_interactive=True, options=None):
+               include_in_interactive=True, options=None, attrs=None):
         if options is None:
             options = []
         fl = cls()
@@ -97,6 +101,8 @@ class SettingOption(SettingOptionInterface, Generic[T]):
         fl.prompt = prompt
         fl.include_in_interactive = include_in_interactive
         fl._options = options
+        fl.attrs = attrs or {}
+
         return fl
 
     @property
