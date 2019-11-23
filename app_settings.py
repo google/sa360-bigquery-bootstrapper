@@ -145,7 +145,10 @@ class AppSettings(settings.AbstractSettings):
                 'report_level': settings.SettingOption.create(
                     self,
                     'Specify the report level of the '
-                    'advertisers being uploaded (conversion/keyword/campaign)',
+                    'advertisers being uploaded (conversion/keyword/campaign).\n'
+                    'Difference between keyword and conversion: Conversion '
+                    'reports only have one conv. per row so '
+                    'no column is needed.',
                     default='keyword',
                     method=flags.DEFINE_enum,
                     options=ReportLevelOptions,
@@ -182,6 +185,7 @@ class AppSettings(settings.AbstractSettings):
                 default='conversions',
                 after=self.hooks.map_historical_column,
                 attrs={'dtype': np.float64},
+                conditional=lambda s: s['report_level'].value == 'keyword',
             ),
             'revenue_column_name': settings.SettingOption.create(
                 self,
