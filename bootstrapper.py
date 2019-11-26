@@ -17,14 +17,14 @@
 # products and are not formally supported.
 # ************************************************************************/
 import os
+import shutil
 import traceback
 from datetime import datetime
+from typing import Dict
 
 import numpy as np
-import shutil
-
-from absl import logging
 from absl import app
+from absl import logging
 from google.api_core.exceptions import BadRequest
 from google.api_core.exceptions import Conflict
 from google.api_core.exceptions import NotFound
@@ -37,15 +37,16 @@ from google.cloud.storage import Bucket
 from google.protobuf.struct_pb2 import Struct
 from googleapiclient import discovery
 from googleapiclient.errors import HttpError
+from prompt_toolkit import prompt
 from termcolor import cprint
 from typing import Dict
 
 import app_settings
 from csv_decoder import Decoder
+from flagmaker.settings import Config
 from flagmaker.settings import SettingOption
 from prompt_toolkit import prompt
 from utilities import *
-from flagmaker.settings import Config
 from views import CreateViews
 from views import DataSets
 
@@ -147,7 +148,15 @@ class Bootstrap:
                 setattr(DataSets, k, client.create_dataset(dataset))
                 cprint('Created dataset {}'.format(dataset), 'green')
 
-    def load_transfers(self, cli: bigquery.Client, project, advertiser):
+    def load_transfers(self, cli: bigquery.Client, project: str, advertiser):
+        """
+        Bootstrap step to create BigQuery data transfers.
+
+        :param cli: BigQuery client instance
+        :param project: Name of the project
+        :param advertiser: Numeric value of an SA360 advertiser
+        :return: The result of the client transfer configuration.
+        """
         client = bigquery_datatransfer.DataTransferServiceClient()
         location = self.s.unwrap('location')
         project = self.s.unwrap('gcp_project_name')
@@ -177,6 +186,7 @@ class Bootstrap:
             'disabled': False,
         }
         result = client.create_transfer_config(parent, config)
+
         cprint(
             'Created schedule for {}'.format(advertiser),
             'cyan',
@@ -184,7 +194,17 @@ class Bootstrap:
         )
         return result
 
-    def ensure_utf8(self, delete=False) -> Blob:
+    def combine_folder(self, delete=False) -> Blob:
+        """
+        Prepares and creates a GCS blob from a folder with multiple files.
+
+        - Converts utf-8, utf-16, latin-1
+        - Converts Excel
+        - Reads CSV, TSV, and Pipe Delimited file
+
+        :param delete: boolean - If set to True, removes original files
+        :return: A GCS blob to upload
+        """
         file_path = self.settings['file_path']
         dest_filename = file_path.value
         setting: SettingOption[app_settings.AppSettings] = file_path
@@ -291,7 +311,7 @@ class Bootstrap:
                 table = dataset_ref.table(table_name)
                 blob = self.bucket.blob('sa360-bq-{}.csv'.format(advertiser))
             if delete_table or not blob.exists():
-                blob = self.ensure_utf8(delete=delete_table)
+                blob = self.combine_folder(delete=delete_table)
             uri = 'gs://{}/{}'.format(
                 self.s.unwrap('storage_bucket'),
                 blob.name

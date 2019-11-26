@@ -236,7 +236,8 @@ class CreateViews:
         d.date Date, 
         m.keywordId,
         m.keyword Keyword{deviceSegment}, 
-        m.campaign Campaign, 
+        m.campaign Campaign,
+        a.advertiser Advertiser, 
         m.account Engine, 
         m.accountType Account_Type,
         SUM(clicks) Clicks, 
@@ -257,6 +258,11 @@ class CreateViews:
             date, 
             keywordId{deviceSegment}
         ) d
+        INNER JOIN (
+            SELECT advertiser 
+            FROM `{project}.{raw_data}.Advertiser_{advertiser}`
+            LIMIT 1
+        ) a ON 1=1
         INNER JOIN `{project}.{view_data}.{keyword_mapper}` m
           ON m.keywordId = d.keywordId
         LEFT JOIN (
@@ -290,6 +296,7 @@ class CreateViews:
             m.keywordId, 
             m.keyword, 
             m.campaign,
+            a.advertiser,
             m.account{deviceSegment},
             m.accountType""".format(
             view_data=self.s.unwrap('view_dataset'),
