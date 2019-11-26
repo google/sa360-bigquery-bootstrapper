@@ -348,7 +348,7 @@ class Hooks:
             location: str = setting.settings['location'].value
             try:
                 value = datetime.strptime(setting.value, '%Y-%m-%d')
-            except Value:
+            except ValueError:
                 kwargs = {}
                 kwargs['dayfirst'] = not location.lower().startswith('us')
                 value = parse_date(setting.value, **kwargs)
