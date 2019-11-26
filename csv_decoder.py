@@ -37,6 +37,7 @@ from absl import logging
 from typing import Dict
 from xlrd import XLRDError
 
+from exceptions import ReadError
 from flagmaker.settings import SettingOption
 from utilities import Locale
 
@@ -49,13 +50,16 @@ class Decoder(object):
                  dict_map: Dict[str, SettingOption], thousands=',',
                  out_type=SINGLE_FILE, dest='out.csv', callback=None):
         self.locale = locale
+        self.possible_delimiters: list = [',', '\t', '|',]
         self.first = True  # ignore headers when False
         self.map = {}
         self.dtypes = {}
         self.errors_found = []
+        self.columns = []
         self.parse_dates = []
         for k, v in dict_map.items():
             k = k.lower()
+            self.columns.append(v.value.lower())
             self.map[k] = v.default
             if v.attrs['dtype'] == np.datetime64:
                 self.parse_dates.append(v.default)
@@ -72,6 +76,11 @@ class Decoder(object):
         self.dir = None
         self.rows_opened: int = 0
         self.callback = callback
+
+    def reorder_delimiters(self, new_start):
+        self.possible_delimiters = [
+            self.possible_delimiters.pop(new_start)
+        ] + self.possible_delimiters
 
     @property
     def filename(self):
@@ -107,8 +116,8 @@ class Decoder(object):
         return self
 
     def __exit__(self, type, value, traceback):
-        if os.path.exists(self.dir + '/' + self.dest):
-            os.remove(self.dir + '/' + self.dest)
+        #if os.path.exists(self.dir + '/' + self.dest):
+            #os.remove(self.dir + '/' + self.dest)
         pass
 
     @property
@@ -158,32 +167,72 @@ class Decoder(object):
             method: Union[pd.read_csv, pd.read_excel],
             path, dtype, **kwargs
         ) -> pd.DataFrame:
+            i = 0
+            for i in range(len(self.parent.possible_delimiters)):
+                sep = self.parent.possible_delimiters[i]
+                try:
+                    res = self._read(method, path, dtype, sep=sep, **kwargs)
+                    if i > 0:
+                        self.parent.reorder_delimiters(i)
+                    return res
+                except ReadError:
+                    continue
+            raise ReadError('Could not recognize delimiter. '
+                            'Please save as one of: \n'
+                            '- Comma Separated Values\n'
+                            '- Tab Separated Values\n'
+                            '- Pipe Separated Values\n'
+                            '- Excel spreadsheet\n'
+                            'If you think this is an error, please first try '
+                            'to re-save this file in one of these formats '
+                            'and then try again.')
+
+        def _read(
+            self,
+            method: Union[pd.read_csv, pd.read_excel],
+            path, dtype, **kwargs
+        ) -> pd.DataFrame:
+            i = 0
+
             def rename_columns(s: str):
+                nonlocal i
                 ls = s.lower()
-                return self.parent.map[ls] if ls in self.parent.map else ls
+                if ls not in self.parent.columns:
+                    i += 1
+                    logging.debug('[no column named {}]'.format(ls))
+                    return 'empty{}'.format(i)
+                rn = self.parent.map[ls] if ls in self.parent.map else ls
+                logging.debug('renamed column {} to {}'.format(ls, rn))
+                return rn
             nrows = kwargs.get('nrows', 0)
             kwargs['nrows'] = 0
-            hdf= method(path, **kwargs)
-            hdf.rename(
-                rename_columns, inplace=True, copy=False, axis='columns'
-            )
-            headers = list(hdf.columns)
-            del kwargs['nrows']
-            kwargs['skiprows'] = kwargs.get('skiprows', 0) + 1
-            if len(headers) != len(set(headers)):
-                self.parent.errors_found.append(
-                    'Duplicate columns in {}'.format(self.path)
+            hdf: pd.DataFrame = method(path, **kwargs)
+            logging.debug('Checking path %s', path)
+            logging.debug('Headers: %s', list(hdf))
+            try:
+                hdf.rename(
+                    rename_columns, inplace=True,
+                    copy=False, axis='columns', errors='raise'
                 )
-            if nrows > 0:
-                kwargs['nrows'] = nrows
-            if len(self.parent.errors_found) == 0:
-                df = method(path, dtype=dtype, names=headers, **kwargs)
-                arguments = {
-                    'dayfirst': self.parent.locale != Locale.US,
-                }
-                df['date'] = pd.to_datetime(df['date'], **arguments)
-                return df
-            return pd.DataFrame()
+                headers = list(hdf.columns)
+                del kwargs['nrows']
+                kwargs['skiprows'] = kwargs.get('skiprows', 0) + 1
+                if len(headers) != len(set(headers)):
+                    self.parent.errors_found.append(
+                        'Duplicate columns in {}'.format(self.path)
+                    )
+                if nrows > 0:
+                    kwargs['nrows'] = nrows
+                if len(self.parent.errors_found) == 0:
+                    df = method(path, dtype=dtype, names=headers, **kwargs)
+                    arguments = {
+                        'dayfirst': self.parent.locale != Locale.US,
+                    }
+                    df['date'] = pd.to_datetime(df['date'], **arguments)
+                    return df
+                return pd.DataFrame()
+            except KeyError as err:
+                raise ReadError(err)
 
         def decode_excel(self):
             df: pd.DataFrame = self.read(
