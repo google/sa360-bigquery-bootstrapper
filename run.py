@@ -16,16 +16,15 @@
 # Note that these code samples being shared are not official Google
 # products and are not formally supported.
 # ************************************************************************/
+from subprocess import check_output
+
 while True:
     try:
         import bootstrapper
         break
     except ImportError as err:
         print('Installing required package {}...'.format(err.name))
-        from pip._internal.utils import subprocess
-        subprocess.call_subprocess(['pipenv', 'install', err.name],
-                                   show_stdout=False)
-        subprocess.call_subprocess(['pipenv', 'update'])
+        check_output(['pipenv', 'install', err.name])
 
 from absl import flags
 import flagmaker.settings as settings
