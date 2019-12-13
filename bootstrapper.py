@@ -37,7 +37,6 @@ from google.cloud.storage import Bucket
 from google.protobuf.struct_pb2 import Struct
 from googleapiclient import discovery
 from googleapiclient.errors import HttpError
-from prompt_toolkit import prompt
 from termcolor import cprint
 from typing import Dict
 
