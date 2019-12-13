@@ -116,8 +116,8 @@ class Decoder(object):
         return self
 
     def __exit__(self, type, value, traceback):
-        #if os.path.exists(self.dir + '/' + self.dest):
-            #os.remove(self.dir + '/' + self.dest)
+        if os.path.exists(self.dir + '/' + self.dest):
+            os.remove(self.dir + '/' + self.dest)
         pass
 
     @property
