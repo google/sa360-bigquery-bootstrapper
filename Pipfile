@@ -18,6 +18,7 @@ google-api-python-client = "*"
 pyyaml = "*"
 pandas = "*"
 xlrd = "*"
+numpy = "*"
 
 [requires]
 python_version = "3"
