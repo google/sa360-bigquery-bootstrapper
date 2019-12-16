@@ -18,6 +18,11 @@
 # ************************************************************************/
 from enum import Enum
 
+lib_mappings = {
+  'googleapiclient': 'google-api-python-client',
+  'absl': 'absl-py',
+  'google.cloud': 'google-cloud',
+}
 
 class Aggregation(Enum):
     SUM = 1
