@@ -18,6 +18,8 @@
 # ************************************************************************/
 import os
 import shutil
+import sys
+import time
 import traceback
 from datetime import datetime
 from typing import Dict
@@ -30,6 +32,7 @@ from google.api_core.exceptions import Conflict
 from google.api_core.exceptions import NotFound
 from google.cloud import bigquery
 from google.cloud import bigquery_datatransfer
+from google.cloud.bigquery_datatransfer_v1 import types
 from google.cloud import storage
 from google.cloud.bigquery.dataset import Dataset
 from google.cloud.storage import Blob
@@ -37,7 +40,7 @@ from google.cloud.storage import Bucket
 from google.protobuf.struct_pb2 import Struct
 from googleapiclient import discovery
 from googleapiclient.errors import HttpError
-from termcolor import cprint
+from termcolor import cprint, colored
 from typing import Dict
 
 import app_settings
@@ -74,12 +77,13 @@ class Bootstrap:
         try:
             return self.storage_cli.get_bucket(bucket_name)
         except NotFound:
-            cprint('Could not find bucket named ' + bucket_name, 'red',
-                   attrs=['bold'])
-            cprint('Please double-check existence, or remove the '
-                   'storage_bucket flag so we can help you create the storage '
-                   'bucket interactively.', 'red')
-            exit(1)
+            if self.settings.hooks.create_new_bucket(bucket_name, self.s.unwrap('gcp_project_name')) is None:
+                cprint('Could not find bucket named ' + bucket_name, 'red',
+                       attrs=['bold'])
+                cprint('Please double-check existence, or remove the '
+                       'storage_bucket flag so we can help you create the storage '
+                       'bucket interactively.', 'red')
+                exit(1)
 
     def exec(self, args):
         try:
@@ -97,7 +101,8 @@ class Bootstrap:
                    'blue', attrs=['bold', 'underline'])
             self.load_service(project)
             self.load_transfers(client, project, advertiser)
-            self.load_historical_tables(client, project, advertiser)
+            if (self.s.unwrap('has_historical_data')):
+                self.load_historical_tables(client, project, advertiser)
             CreateViews(self.settings, client, project, advertiser).run()
         except BadRequest as err:
             cprint(
@@ -147,6 +152,30 @@ class Bootstrap:
                 setattr(DataSets, k, client.create_dataset(dataset))
                 cprint('Created dataset {}'.format(dataset), 'green')
 
+    def wait_for_transfer(self, client, config, wait_for_all=False):
+        sys.stdout.write(colored('Waiting for transfers to succeed. This might take a while.', 'red'))
+        sys.stdout.flush()
+        success = bigquery_datatransfer.enums.TransferState.SUCCEEDED
+        while True:
+            ts = [t for t in client.list_transfer_runs(config.name)]
+            transfers_complete = wait_for_all
+            for t in ts:
+                if not wait_for_all and t.state == success.value:
+                    transfers_complete = True
+                    return
+
+                if t.state != success.value:
+                    transfers_complete = False
+                else:
+                    continue
+                if not transfers_complete:
+                    sys.stdout.write('.')
+                    sys.stdout.flush()
+                    time.sleep(10)
+            if transfers_complete: 
+                cprint('\nDone', 'green')
+                return
+
     def load_transfers(self, cli: bigquery.Client, project: str, advertiser):
         """
         Bootstrap step to create BigQuery data transfers.
@@ -166,10 +195,12 @@ class Bootstrap:
         display_name= 'SA360 Transfer {}'.format(advertiser)
         config = Bootstrap.config_exists(client, parent, display_name)
         if config is not None:
+            print('start transfer')
             cprint(
                 'Schedule already exists for {}. Skipping'.format(advertiser),
                 'cyan'
             )
+            self.wait_for_transfer(client, config)
             return config
         params['agency_id'] = str(self.s.unwrap('agency_id'))
         params['advertiser_id'] = str(advertiser)
@@ -184,13 +215,14 @@ class Bootstrap:
             'params': params,
             'disabled': False,
         }
-        result = client.create_transfer_config(parent, config)
 
+        result = client.create_transfer_config(parent, config)
         cprint(
             'Created schedule for {}'.format(advertiser),
             'cyan',
             attrs=['bold']
         )
+        self.wait_for_transfer(client, result)
         return result
 
     def combine_folder(self, delete=False) -> Blob:

@@ -259,6 +259,13 @@ class Hooks:
         )
         return True
 
+    def create_new_bucket(self, bucket: str, project_name: str) -> None:
+        result = self.storage.create_bucket(
+                bucket,
+                project=project_name
+                )
+        return result
+
     def create_bucket(self, setting: settings.SettingOption) -> bool:
         class ChooseAnother:
             toggle = False
@@ -291,10 +298,7 @@ class Hooks:
                 )
                 if r.lower() == 'y':
                     ChooseAnother.toggle = True
-                    result = self.storage.create_bucket(
-                        setting.value,
-                        project=s['gcp_project_name'].value
-                    )
+                    self.settings.create_new_bucket(setting.value, s['project_name'].value)
                     cprint('Created ' + setting.value, 'green', attrs=['bold'])
                     setting.value = result
                     return True

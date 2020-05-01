@@ -22,6 +22,7 @@ lib_mappings = {
   'googleapiclient': 'google-api-python-client',
   'absl': 'absl-py',
   'google.cloud': 'google-cloud',
+  'google.cloud.bigquery_datatransfer_v1': 'google-cloud-bigquery-datatransfer',
 }
 
 class Aggregation(Enum):

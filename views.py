@@ -58,23 +58,23 @@ class CreateViews:
             raise MethodNotCreated('Methods for campaign-only views'
                                    ' not implemented.')
         else:
+            self.view(
+                ViewTypes.KEYWORD_MAPPER,
+                'keyword_mapper'
+            )
             if self.s.unwrap('has_historical_data'):
-                self.view(
-                    ViewTypes.KEYWORD_MAPPER,
-                    'keyword_mapper'
-                )
                 self.view(
                     ViewTypes.HISTORICAL_CONVERSIONS,
                     'historical_conversions'
                 )
                 self.view(
-                    ViewTypes.REPORT_VIEW,
-                    'report_view',
-                )
-                self.view(
                     ViewTypes.HISTORICAL_REPORT,
                     'historical_report',
                 )
+            self.view(
+                ViewTypes.REPORT_VIEW,
+                'report_view',
+            )
 
     def view(self, view_name: ViewTypes, func_name):
         adv = str(self.s.unwrap('advertiser_id'))
@@ -231,8 +231,39 @@ class CreateViews:
 
     def report_view(self, advertiser):
         views = ViewGetter(advertiser)
+        deviceSegment = (',\n' + 'd.deviceSegment AS Device_Segment'
+                if self.s.unwrap('has_device_segment') else '')
+        historical_conversions = views.get(ViewTypes.HISTORICAL_CONVERSIONS)
+        project = self.s.unwrap('gcp_project_name')
+        view_data = self.s.unwrap('view_dataset')
+        raw_data = self.s.unwrap('raw_dataset')
+        keyword_mapper = views.get(ViewTypes.KEYWORD_MAPPER)
+        date = self.s.unwrap('first_date_conversions')
+        maybe_historical_data = 'LEFT JOIN ('
 
-        sql = """SELECT 
+        if self.s.unwrap('has_historical_data'):
+            maybe_historical_data += f"""
+              SELECT
+                date,
+                keywordId{deviceSegment},
+                SUM(revenue) revenue,
+                SUM(conversions) conversions
+              FROM `{project}.{view_data}.{historical_conversions}` o
+              GROUP BY 
+                date, 
+                keywordId{deviceSegment}
+            """
+        else:
+            maybe_historical_data += """
+                SELECT CURRENT_DATE() as date, 
+                '0' as keywordId, 
+                NULL as device_segment,
+                NULL as revenue,
+                NULL AS conversions
+            """
+        maybe_historical_data += ') h ON h.keywordId = d.keywordId' \
+                                 ' AND h.date = d.date'
+        sql = f"""SELECT 
         d.date Date, 
         m.keywordId,
         m.keyword Keyword{deviceSegment}, 
@@ -265,19 +296,7 @@ class CreateViews:
         ) a ON 1=1
         INNER JOIN `{project}.{view_data}.{keyword_mapper}` m
           ON m.keywordId = d.keywordId
-        LEFT JOIN (
-          SELECT
-            date,
-            keywordId{deviceSegment},
-            SUM(revenue) revenue,
-            SUM(conversions) conversions
-          FROM `{project}.{view_data}.{historical_conversions}` o
-          GROUP BY 
-            date, 
-            keywordId{deviceSegment}
-        ) h 
-            ON h.keywordId=d.keywordId 
-            AND h.date=d.date
+        {maybe_historical_data}
         LEFT JOIN (
           SELECT 
             date, 
@@ -290,7 +309,7 @@ class CreateViews:
         ) c 
             ON c.keywordId=d.keywordId 
             AND c.date=d.date 
-            AND c.date > '{date}'
+            {"AND c.date > '{date}'" if date else ''}
         GROUP BY
             d.date, 
             m.keywordId, 
@@ -298,17 +317,7 @@ class CreateViews:
             m.campaign,
             a.advertiser,
             m.account{deviceSegment},
-            m.accountType""".format(
-            view_data=self.s.unwrap('view_dataset'),
-            keyword_mapper=views.get(ViewTypes.KEYWORD_MAPPER),
-            deviceSegment=(',\n' + 'd.deviceSegment AS Device_Segment')
-                          if self.s.unwrap('has_device_segment') else '',
-            project=self.s.unwrap('gcp_project_name'),
-            raw_data=self.s.unwrap('raw_dataset'),
-            advertiser=advertiser,
-            date=self.s.unwrap('first_date_conversions'),
-            historical_conversions=views.get(ViewTypes.HISTORICAL_CONVERSIONS),
-        )
+            m.accountType"""
         return sql
 
     def historical_report(self, advertiser):

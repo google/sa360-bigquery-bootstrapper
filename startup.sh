@@ -18,7 +18,9 @@
 # ************************************************************************/
 
 [[ -z $(which pipenv) ]] && pip3 install pipenv --user
-[[ -n $1 && $(gcloud config get-value project) != $1 ]] && gcloud config set project $1 && echo "Project set"
+export GOOGLE_CLOUD_PROJECT=$1
+gcloud config set project $1
+gcloud config get-value project
 
 gcloud services enable doubleclicksearch.googleapis.com
 gcloud services enable storage-component.googleapis.com
