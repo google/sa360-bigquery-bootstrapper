@@ -19,7 +19,6 @@ pyyaml = "*"
 pandas = "*"
 xlrd = "*"
 numpy = "*"
-sys-stdout = "*"
 
 [requires]
 python_version = "3"
